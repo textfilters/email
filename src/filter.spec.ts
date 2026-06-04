@@ -101,6 +101,15 @@ describe("@textfilters/email", () => {
     );
   });
 
+  it("masks obfuscated email addresses introduced by prepositional wording", () => {
+    expect(filter.censor("send to user at example dot com")).toBe(
+      "send to ***********************",
+    );
+    expect(filter.censor("write to admin at example dot com")).toBe(
+      "write to ************************",
+    );
+  });
+
   it("masks bare-word obfuscated email addresses after punctuation or newlines", () => {
     const email = "user at example dot com";
     expect(filter.censor(`hello. ${email}`)).toBe(
@@ -151,6 +160,18 @@ describe("@textfilters/email", () => {
     );
     expect(filter.censor("children study at example dot com")).toBe(
       "children study at example dot com",
+    );
+    expect(filter.censor("I like my job at example dot com")).toBe(
+      "I like my job at example dot com",
+    );
+    expect(filter.censor("we saw her work at example dot com")).toBe(
+      "we saw her work at example dot com",
+    );
+    expect(filter.censor("Located at example dot com")).toBe(
+      "Located at example dot com",
+    );
+    expect(filter.censor("See our site. Located at example dot com")).toBe(
+      "See our site. Located at example dot com",
     );
   });
 
