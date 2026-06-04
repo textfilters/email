@@ -37,14 +37,20 @@ const LOCAL_CHAR_RE = /^[a-z0-9._%+-]$/u;
 const WORD_CHAR_RE = /^[a-z0-9_+-]$/u;
 const DOMAIN_LABEL_RE = /^[a-z0-9-]+$/u;
 const TLD_RE = /^[a-z][a-z0-9-]{1,62}$/u;
-const PROSE_SUBJECT_WORDS = new Set([
-  "he",
-  "i",
-  "it",
-  "she",
-  "they",
-  "we",
-  "you",
+const EMAIL_INTRODUCER_WORDS = new Set([
+  "contact",
+  "email",
+  "mail",
+  "message",
+  "reach",
+  "send",
+]);
+const POSSESSIVE_INTRODUCER_WORDS = new Set([
+  "her",
+  "his",
+  "my",
+  "our",
+  "their",
 ]);
 
 const isLocalChar = (value: string): boolean => LOCAL_CHAR_RE.test(value);
@@ -79,11 +85,16 @@ const isValidLocal = (value: string): boolean => {
   return Array.from(value).every(isLocalChar);
 };
 
+const isEmailIntroducer = (token: Token | undefined): boolean =>
+  token?.type === TOKEN_TYPE.word &&
+  (EMAIL_INTRODUCER_WORDS.has(token.value) ||
+    POSSESSIVE_INTRODUCER_WORDS.has(token.value));
+
 const isProseBareAtPhrase = (previous: Token | undefined, at: Token): boolean =>
   at.value === "at" &&
   !at.wrapped &&
-  previous?.type === TOKEN_TYPE.word &&
-  PROSE_SUBJECT_WORDS.has(previous.value);
+  previous !== undefined &&
+  !isEmailIntroducer(previous);
 
 const isValidDomain = (
   labels: readonly string[],

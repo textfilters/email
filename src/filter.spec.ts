@@ -133,6 +133,12 @@ describe("@textfilters/email", () => {
     expect(filter.censor("we work at www dot example dot com")).toBe(
       "we work at www dot example dot com",
     );
+    expect(filter.censor("employees work at example dot com")).toBe(
+      "employees work at example dot com",
+    );
+    expect(filter.censor("children study at example dot com")).toBe(
+      "children study at example dot com",
+    );
   });
 
   it("does not mask versions, coordinates, or normal text", () => {
