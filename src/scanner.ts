@@ -30,12 +30,30 @@ interface Token {
   readonly value: string;
   readonly start: number;
   readonly end: number;
+  readonly wrapped: boolean;
 }
 
 const LOCAL_CHAR_RE = /^[a-z0-9._%+-]$/u;
 const WORD_CHAR_RE = /^[a-z0-9_+-]$/u;
 const DOMAIN_LABEL_RE = /^[a-z0-9-]+$/u;
 const TLD_RE = /^[a-z][a-z0-9-]{1,62}$/u;
+const PROSE_LOCAL_WORDS = new Set([
+  "and",
+  "are",
+  "can",
+  "for",
+  "get",
+  "got",
+  "not",
+  "our",
+  "see",
+  "the",
+  "was",
+  "were",
+  "will",
+  "yes",
+  "you",
+]);
 
 const isLocalChar = (value: string): boolean => LOCAL_CHAR_RE.test(value);
 
@@ -68,6 +86,9 @@ const isValidLocal = (value: string): boolean => {
   if (value.includes("..")) return false;
   return Array.from(value).every(isLocalChar);
 };
+
+const isProseBareLocal = (local: Token, at: Token): boolean =>
+  at.value === "at" && !at.wrapped && PROSE_LOCAL_WORDS.has(local.value);
 
 const isValidDomain = (
   labels: readonly string[],
@@ -161,10 +182,22 @@ const readWrappedSeparator = (
 
   if (meta.normalized[cursor] !== close) return null;
   if (value === "at" || value === "@") {
-    return { type: TOKEN_TYPE.at, value, start, end: cursor + 1 };
+    return {
+      type: TOKEN_TYPE.at,
+      value,
+      start,
+      end: cursor + 1,
+      wrapped: true,
+    };
   }
   if (value === "dot" || value === ".") {
-    return { type: TOKEN_TYPE.dot, value, start, end: cursor + 1 };
+    return {
+      type: TOKEN_TYPE.dot,
+      value,
+      start,
+      end: cursor + 1,
+      wrapped: true,
+    };
   }
   return null;
 };
@@ -193,6 +226,7 @@ const tokenize = (meta: EmailTextMeta): readonly Token[] => {
         value: current,
         start: cursor,
         end: cursor + 1,
+        wrapped: false,
       });
       cursor++;
       continue;
@@ -203,6 +237,7 @@ const tokenize = (meta: EmailTextMeta): readonly Token[] => {
         value: current,
         start: cursor,
         end: cursor + 1,
+        wrapped: false,
       });
       cursor++;
       continue;
@@ -224,7 +259,7 @@ const tokenize = (meta: EmailTextMeta): readonly Token[] => {
           : value === "dot"
             ? TOKEN_TYPE.dot
             : TOKEN_TYPE.word;
-      tokens.push({ type, value, start, end: cursor });
+      tokens.push({ type, value, start, end: cursor, wrapped: false });
       continue;
     }
 
@@ -263,6 +298,7 @@ const collectObfuscatedRanges = (
     }
 
     if (!isValidDomain(labels, options)) continue;
+    if (isProseBareLocal(local, at)) continue;
     const endToken = tokens[cursor - 1];
     if (!hasBoundary(previousContent(meta, local.start - 1))) continue;
     if (!hasBoundary(nextContent(meta, endToken.end))) continue;

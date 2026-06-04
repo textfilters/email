@@ -63,6 +63,20 @@ describe("@textfilters/email", () => {
     ).toBe("contact ***************************************");
   });
 
+  it("masks explicit obfuscated email addresses with www subdomains", () => {
+    const email = "user [at] www [dot] example [dot] com";
+    expect(filter.censor(`contact ${email}`)).toBe(
+      `contact ${"*".repeat(email.length)}`,
+    );
+  });
+
+  it("masks bare-word obfuscated email addresses with www subdomains", () => {
+    const email = "user at www dot example dot com";
+    expect(filter.censor(`contact ${email}`)).toBe(
+      `contact ${"*".repeat(email.length)}`,
+    );
+  });
+
   it("does not mask package scopes", () => {
     expect(filter.censor("install @textfilters/core")).toBe(
       "install @textfilters/core",
@@ -76,6 +90,21 @@ describe("@textfilters/email", () => {
   it("does not mask prose without a plausible local part", () => {
     expect(filter.censor("meet me at example dot com")).toBe(
       "meet me at example dot com",
+    );
+  });
+
+  it("does not mask URL-like text after a normal word", () => {
+    expect(filter.censor("и ещё www (.) example dot com")).toBe(
+      "и ещё www (.) example dot com",
+    );
+    expect(filter.censor("go www dot example dot com")).toBe(
+      "go www dot example dot com",
+    );
+    expect(filter.censor("we are at www dot example dot com")).toBe(
+      "we are at www dot example dot com",
+    );
+    expect(filter.censor("we are at example dot com")).toBe(
+      "we are at example dot com",
     );
   });
 
