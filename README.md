@@ -1,0 +1,67 @@
+# @textfilters/email
+
+Email address and obfuscated-email filtering for composable text moderation.
+
+## Installation
+
+Add the GitHub Packages registry for the `@textfilters` scope:
+
+```ini
+@textfilters:registry=https://npm.pkg.github.com
+```
+
+Install with GitHub npm authentication configured. GitHub Packages requires authentication for npm installs, including public packages.
+
+```sh
+npm install @textfilters/core @textfilters/email
+```
+
+## Usage
+
+```ts
+import { createEmailFilter } from "@textfilters/email";
+
+const emailFilter = createEmailFilter({ maskChar: "#" });
+const safeText = emailFilter.censor("contact user@example.com");
+```
+
+```ts
+import { filter } from "@textfilters/email";
+
+const safeText = filter.censor("contact user [at] example [dot] com");
+```
+
+```ts
+import { createTextPipeline } from "@textfilters/core";
+import { filter as emailFilter } from "@textfilters/email";
+
+const pipeline = createTextPipeline().use(emailFilter);
+const result = pipeline.censor("contact user@example.com");
+```
+
+The default shared instance is exported as `filter`. It has stable `name: "email"`.
+
+## Behavior
+
+The package detects direct email addresses such as `user@example.com`, tagged local parts, mixed-case input, subdomains, and common fullwidth symbol variants after NFKC normalization.
+
+It also detects common obfuscated forms such as `user [at] example [dot] com`, `user(at)example(dot)com`, `user at example dot com`, and `user [@] example [.] com`.
+
+`censor()` preserves JavaScript string length for matched spans where practical and is idempotent. Masking is applied over code points so surrogate pairs are not split.
+
+False-positive guards avoid package scopes, social handles, prose-only `at` and `dot` words, version-like text, IP addresses, incomplete domains, and single-label domains by default.
+
+## Architecture
+
+See [docs/architecture.md](docs/architecture.md) for the scanner flow, module map,
+and change guide.
+
+## Release
+
+Releases are created from `v*` tags. The release workflow runs `npm run check`, publishes the package to GitHub Packages, and creates the GitHub Release.
+
+The package is prepared for publication to GitHub Packages, not the public npm registry.
+
+## License
+
+MIT
