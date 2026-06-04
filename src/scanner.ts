@@ -39,14 +39,9 @@ const DOMAIN_LABEL_RE = /^[a-z0-9-]+$/u;
 const TLD_RE = /^[a-z][a-z0-9-]{1,62}$/u;
 const PROSE_SUBJECT_WORDS = new Set([
   "he",
-  "her",
-  "his",
   "i",
   "it",
-  "my",
-  "our",
   "she",
-  "their",
   "they",
   "we",
   "you",

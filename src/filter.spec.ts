@@ -86,6 +86,18 @@ describe("@textfilters/email", () => {
     );
   });
 
+  it("masks obfuscated email addresses introduced by possessive pronouns", () => {
+    expect(filter.censor("email our support at example dot com")).toBe(
+      "email our **************************",
+    );
+    expect(filter.censor("my admin at example dot com")).toBe(
+      "my ************************",
+    );
+    expect(filter.censor("their sales at example dot com")).toBe(
+      "their ************************",
+    );
+  });
+
   it("does not mask package scopes", () => {
     expect(filter.censor("install @textfilters/core")).toBe(
       "install @textfilters/core",
