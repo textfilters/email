@@ -102,11 +102,29 @@ describe("@textfilters/email", () => {
   });
 
   it("masks obfuscated email addresses introduced by prepositional wording", () => {
+    expect(filter.censor("contact located at example dot com")).toBe(
+      "contact **************************",
+    );
     expect(filter.censor("send to user at example dot com")).toBe(
       "send to ***********************",
     );
     expect(filter.censor("write to admin at example dot com")).toBe(
       "write to ************************",
+    );
+    expect(filter.censor("send to located at example dot com")).toBe(
+      "send to **************************",
+    );
+  });
+
+  it("masks obfuscated email addresses introduced by e-mail wording", () => {
+    expect(filter.censor("please e-mail user at example dot com")).toBe(
+      "please e-mail ***********************",
+    );
+  });
+
+  it("masks obfuscated email addresses introduced through copula wording", () => {
+    expect(filter.censor("my email is user at example dot com")).toBe(
+      "my email is ***********************",
     );
   });
 

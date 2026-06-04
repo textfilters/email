@@ -39,6 +39,7 @@ const DOMAIN_LABEL_RE = /^[a-z0-9-]+$/u;
 const TLD_RE = /^[a-z][a-z0-9-]{1,62}$/u;
 const EMAIL_INTRODUCER_WORDS = new Set([
   "contact",
+  "e-mail",
   "email",
   "mail",
   "message",
@@ -55,6 +56,7 @@ const POSSESSIVE_INTRODUCER_WORDS = new Set([
   "your",
 ]);
 const PREPOSITIONAL_INTRODUCER_WORDS = new Set(["to"]);
+const COPULA_INTRODUCER_WORDS = new Set(["is"]);
 const SENTENCE_INITIAL_PROSE_LOCAL_WORDS = new Set(["located"]);
 
 const isLocalChar = (value: string): boolean => LOCAL_CHAR_RE.test(value);
@@ -99,6 +101,9 @@ const isPossessiveIntroducer = (token: Token | undefined): boolean =>
 const isPrepositionalIntroducer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word &&
   PREPOSITIONAL_INTRODUCER_WORDS.has(token.value);
+
+const isCopulaIntroducer = (token: Token | undefined): boolean =>
+  token?.type === TOKEN_TYPE.word && COPULA_INTRODUCER_WORDS.has(token.value);
 
 const isHorizontalWhitespace = (value: string): boolean =>
   value !== "\n" && value !== "\r" && isWhitespace(value);
@@ -149,6 +154,10 @@ const hasEmailIntroducerContext = (
     return true;
   }
 
+  if (isCopulaIntroducer(previous) && isEmailIntroducer(beforePrevious)) {
+    return true;
+  }
+
   if (
     isPossessiveIntroducer(previous) &&
     (beforePrevious === undefined || isEmailIntroducer(beforePrevious))
@@ -159,6 +168,15 @@ const hasEmailIntroducerContext = (
   return false;
 };
 
+const isSentenceInitialProseBareAtPhrase = (
+  meta: EmailTextMeta,
+  tokens: readonly Token[],
+  index: number,
+  local: Token,
+): boolean =>
+  SENTENCE_INITIAL_PROSE_LOCAL_WORDS.has(local.value) &&
+  previousWordInSamePhrase(meta, tokens, index) === undefined;
+
 const isProseBareAtPhrase = (
   meta: EmailTextMeta,
   tokens: readonly Token[],
@@ -168,7 +186,7 @@ const isProseBareAtPhrase = (
 ): boolean =>
   at.value === "at" &&
   !at.wrapped &&
-  (SENTENCE_INITIAL_PROSE_LOCAL_WORDS.has(local.value) ||
+  (isSentenceInitialProseBareAtPhrase(meta, tokens, index, local) ||
     !hasEmailIntroducerContext(meta, tokens, index));
 
 const isValidDomain = (
