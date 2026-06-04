@@ -57,7 +57,26 @@ const POSSESSIVE_INTRODUCER_WORDS = new Set([
 ]);
 const PREPOSITIONAL_INTRODUCER_WORDS = new Set(["to"]);
 const COPULA_INTRODUCER_WORDS = new Set(["is"]);
-const SENTENCE_INITIAL_PROSE_LOCAL_WORDS = new Set(["located"]);
+const ADDRESS_NOUN_WORDS = new Set(["address"]);
+const DETERMINER_WORDS = new Set([
+  "a",
+  "an",
+  "her",
+  "his",
+  "my",
+  "our",
+  "that",
+  "the",
+  "their",
+  "this",
+  "your",
+]);
+const ADJECTIVE_INTRODUCER_WORDS = new Set(["email", "mail", "message"]);
+const SENTENCE_INITIAL_PROSE_LOCAL_WORDS = new Set([
+  "located",
+  "study",
+  "work",
+]);
 
 const isLocalChar = (value: string): boolean => LOCAL_CHAR_RE.test(value);
 
@@ -105,6 +124,18 @@ const isPrepositionalIntroducer = (token: Token | undefined): boolean =>
 const isCopulaIntroducer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && COPULA_INTRODUCER_WORDS.has(token.value);
 
+const isAddressNoun = (token: Token | undefined): boolean =>
+  token?.type === TOKEN_TYPE.word && ADDRESS_NOUN_WORDS.has(token.value);
+
+const isDeterminer = (token: Token | undefined): boolean =>
+  token?.type === TOKEN_TYPE.word && DETERMINER_WORDS.has(token.value);
+
+const isAdjectivalEmailIntroducer = (
+  token: Token,
+  previous: Token | undefined,
+): boolean =>
+  ADJECTIVE_INTRODUCER_WORDS.has(token.value) && isDeterminer(previous);
+
 const isHorizontalWhitespace = (value: string): boolean =>
   value !== "\n" && value !== "\r" && isWhitespace(value);
 
@@ -144,9 +175,12 @@ const hasEmailIntroducerContext = (
 ): boolean => {
   const previous = previousWordInSamePhrase(meta, tokens, index);
   if (previous === undefined) return true;
-  if (isEmailIntroducer(previous)) return true;
 
   const beforePrevious = previousWordInSamePhrase(meta, tokens, index - 1);
+  if (isEmailIntroducer(previous)) {
+    return !isAdjectivalEmailIntroducer(previous, beforePrevious);
+  }
+
   if (
     isPrepositionalIntroducer(previous) &&
     isEmailIntroducer(beforePrevious)
@@ -154,7 +188,19 @@ const hasEmailIntroducerContext = (
     return true;
   }
 
+  const beforeBeforePrevious = previousWordInSamePhrase(
+    meta,
+    tokens,
+    index - 2,
+  );
   if (isCopulaIntroducer(previous) && isEmailIntroducer(beforePrevious)) {
+    return true;
+  }
+  if (
+    isCopulaIntroducer(previous) &&
+    isAddressNoun(beforePrevious) &&
+    isEmailIntroducer(beforeBeforePrevious)
+  ) {
     return true;
   }
 
@@ -184,7 +230,7 @@ const isProseBareAtPhrase = (
   local: Token,
   at: Token,
 ): boolean =>
-  at.value === "at" &&
+  (at.value === "at" || at.value === "@") &&
   !at.wrapped &&
   (isSentenceInitialProseBareAtPhrase(meta, tokens, index, local) ||
     !hasEmailIntroducerContext(meta, tokens, index));
@@ -388,16 +434,23 @@ const collectObfuscatedRanges = (
     labels.push(tokens[cursor].value);
     cursor++;
 
+    let hasExplicitDomainSeparator = false;
     while (
       tokens[cursor]?.type === TOKEN_TYPE.dot &&
       tokens[cursor + 1]?.type === TOKEN_TYPE.word
     ) {
+      if (tokens[cursor].wrapped) hasExplicitDomainSeparator = true;
       labels.push(tokens[cursor + 1].value);
       cursor += 2;
     }
 
     if (!isValidDomain(labels, options)) continue;
-    if (isProseBareAtPhrase(meta, tokens, i, local, at)) continue;
+    if (
+      !hasExplicitDomainSeparator &&
+      isProseBareAtPhrase(meta, tokens, i, local, at)
+    ) {
+      continue;
+    }
     const endToken = tokens[cursor - 1];
     if (!hasBoundary(previousContent(meta, local.start - 1))) continue;
     if (!hasBoundary(nextContent(meta, endToken.end))) continue;

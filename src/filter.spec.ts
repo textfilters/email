@@ -126,6 +126,9 @@ describe("@textfilters/email", () => {
     expect(filter.censor("my email is user at example dot com")).toBe(
       "my email is ***********************",
     );
+    expect(filter.censor("my email address is user at example dot com")).toBe(
+      "my email address is ***********************",
+    );
   });
 
   it("masks bare-word obfuscated email addresses after punctuation or newlines", () => {
@@ -173,11 +176,23 @@ describe("@textfilters/email", () => {
     expect(filter.censor("we work at www dot example dot com")).toBe(
       "we work at www dot example dot com",
     );
+    expect(filter.censor("we work @ example dot com")).toBe(
+      "we work @ example dot com",
+    );
     expect(filter.censor("employees work at example dot com")).toBe(
       "employees work at example dot com",
     );
     expect(filter.censor("children study at example dot com")).toBe(
       "children study at example dot com",
+    );
+    expect(filter.censor("Work at example dot com")).toBe(
+      "Work at example dot com",
+    );
+    expect(filter.censor("Study at example dot com")).toBe(
+      "Study at example dot com",
+    );
+    expect(filter.censor("the email service at example dot com is down")).toBe(
+      "the email service at example dot com is down",
     );
     expect(filter.censor("I like my job at example dot com")).toBe(
       "I like my job at example dot com",
@@ -190,6 +205,13 @@ describe("@textfilters/email", () => {
     );
     expect(filter.censor("See our site. Located at example dot com")).toBe(
       "See our site. Located at example dot com",
+    );
+  });
+
+  it("masks mixed explicit dot obfuscated email addresses", () => {
+    const email = "user at example [dot] com";
+    expect(filter.censor(`try ${email}`)).toBe(
+      `try ${"*".repeat(email.length)}`,
     );
   });
 
