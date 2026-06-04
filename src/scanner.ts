@@ -37,21 +37,18 @@ const LOCAL_CHAR_RE = /^[a-z0-9._%+-]$/u;
 const WORD_CHAR_RE = /^[a-z0-9_+-]$/u;
 const DOMAIN_LABEL_RE = /^[a-z0-9-]+$/u;
 const TLD_RE = /^[a-z][a-z0-9-]{1,62}$/u;
-const PROSE_LOCAL_WORDS = new Set([
-  "and",
-  "are",
-  "can",
-  "for",
-  "get",
-  "got",
-  "not",
+const PROSE_SUBJECT_WORDS = new Set([
+  "he",
+  "her",
+  "his",
+  "i",
+  "it",
+  "my",
   "our",
-  "see",
-  "the",
-  "was",
-  "were",
-  "will",
-  "yes",
+  "she",
+  "their",
+  "they",
+  "we",
   "you",
 ]);
 
@@ -87,8 +84,11 @@ const isValidLocal = (value: string): boolean => {
   return Array.from(value).every(isLocalChar);
 };
 
-const isProseBareLocal = (local: Token, at: Token): boolean =>
-  at.value === "at" && !at.wrapped && PROSE_LOCAL_WORDS.has(local.value);
+const isProseBareAtPhrase = (previous: Token | undefined, at: Token): boolean =>
+  at.value === "at" &&
+  !at.wrapped &&
+  previous?.type === TOKEN_TYPE.word &&
+  PROSE_SUBJECT_WORDS.has(previous.value);
 
 const isValidDomain = (
   labels: readonly string[],
@@ -298,7 +298,7 @@ const collectObfuscatedRanges = (
     }
 
     if (!isValidDomain(labels, options)) continue;
-    if (isProseBareLocal(local, at)) continue;
+    if (isProseBareAtPhrase(tokens[i - 1], at)) continue;
     const endToken = tokens[cursor - 1];
     if (!hasBoundary(previousContent(meta, local.start - 1))) continue;
     if (!hasBoundary(nextContent(meta, endToken.end))) continue;

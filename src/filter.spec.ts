@@ -77,6 +77,15 @@ describe("@textfilters/email", () => {
     );
   });
 
+  it("masks common-word local parts in obfuscated email addresses", () => {
+    expect(filter.censor("contact the at example dot com")).toBe(
+      "contact **********************",
+    );
+    expect(filter.censor("email you at example dot com")).toBe(
+      "email **********************",
+    );
+  });
+
   it("does not mask package scopes", () => {
     expect(filter.censor("install @textfilters/core")).toBe(
       "install @textfilters/core",
@@ -105,6 +114,12 @@ describe("@textfilters/email", () => {
     );
     expect(filter.censor("we are at example dot com")).toBe(
       "we are at example dot com",
+    );
+    expect(filter.censor("we live at example dot com")).toBe(
+      "we live at example dot com",
+    );
+    expect(filter.censor("we work at www dot example dot com")).toBe(
+      "we work at www dot example dot com",
     );
   });
 
