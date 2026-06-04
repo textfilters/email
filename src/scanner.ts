@@ -51,6 +51,7 @@ const POSSESSIVE_INTRODUCER_WORDS = new Set([
   "my",
   "our",
   "their",
+  "your",
 ]);
 
 const isLocalChar = (value: string): boolean => LOCAL_CHAR_RE.test(value);
@@ -90,10 +91,32 @@ const isEmailIntroducer = (token: Token | undefined): boolean =>
   (EMAIL_INTRODUCER_WORDS.has(token.value) ||
     POSSESSIVE_INTRODUCER_WORDS.has(token.value));
 
-const isProseBareAtPhrase = (previous: Token | undefined, at: Token): boolean =>
+const isHorizontalWhitespace = (value: string): boolean =>
+  value !== "\n" && value !== "\r" && isWhitespace(value);
+
+const isSameProsePhrase = (
+  meta: EmailTextMeta,
+  previous: Token,
+  local: Token,
+): boolean => {
+  for (let i = previous.end; i < local.start; i++) {
+    if (meta.zeroWidth[i]) continue;
+    if (!isHorizontalWhitespace(meta.normalized[i])) return false;
+  }
+  return true;
+};
+
+const isProseBareAtPhrase = (
+  meta: EmailTextMeta,
+  previous: Token | undefined,
+  local: Token,
+  at: Token,
+): boolean =>
   at.value === "at" &&
   !at.wrapped &&
   previous !== undefined &&
+  previous.type === TOKEN_TYPE.word &&
+  isSameProsePhrase(meta, previous, local) &&
   !isEmailIntroducer(previous);
 
 const isValidDomain = (
@@ -304,7 +327,7 @@ const collectObfuscatedRanges = (
     }
 
     if (!isValidDomain(labels, options)) continue;
-    if (isProseBareAtPhrase(tokens[i - 1], at)) continue;
+    if (isProseBareAtPhrase(meta, tokens[i - 1], local, at)) continue;
     const endToken = tokens[cursor - 1];
     if (!hasBoundary(previousContent(meta, local.start - 1))) continue;
     if (!hasBoundary(nextContent(meta, endToken.end))) continue;

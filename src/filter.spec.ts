@@ -96,6 +96,19 @@ describe("@textfilters/email", () => {
     expect(filter.censor("their sales at example dot com")).toBe(
       "their ************************",
     );
+    expect(filter.censor("your admin at example dot com")).toBe(
+      "your ************************",
+    );
+  });
+
+  it("masks bare-word obfuscated email addresses after punctuation or newlines", () => {
+    const email = "user at example dot com";
+    expect(filter.censor(`hello. ${email}`)).toBe(
+      `hello. ${"*".repeat(email.length)}`,
+    );
+    expect(filter.censor(`hello\n${email}`)).toBe(
+      `hello\n${"*".repeat(email.length)}`,
+    );
   });
 
   it("does not mask package scopes", () => {
