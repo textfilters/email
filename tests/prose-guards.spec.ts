@@ -191,6 +191,9 @@ describe("@textfilters/email prose guards", () => {
     expect(filter.censor("Note - work at example dot com")).toBe(
       "Note - work at example dot com",
     );
+    expect(filter.censor("Note- work at example dot com")).toBe(
+      "Note- work at example dot com",
+    );
     expect(filter.censor("Note:\nwork at example dot com")).toBe(
       "Note:\nwork at example dot com",
     );

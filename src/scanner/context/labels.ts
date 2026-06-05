@@ -11,6 +11,12 @@ import {
 import { previousWordInSamePhrase } from "./phrase.js";
 import { TOKEN_TYPE, type Token } from "../core.js";
 
+interface LabelCandidate {
+  readonly index: number;
+  readonly label: Token;
+  readonly separatorStart: number;
+}
+
 const hasLabelSeparator = (
   meta: EmailTextMeta,
   start: number,
@@ -46,23 +52,43 @@ const isEmailLabel = (
     (beforeLabel === undefined || isEmailLabelWord(beforeLabel))) ||
   (isRecipientObject(label) && isEmailLabelWord(beforeLabel));
 
-const labelIndexBeforeSeparator = (
+const toLabelCandidate = (index: number, label: Token): LabelCandidate => {
+  const lastValue = label.value[label.value.length - 1] ?? "";
+  if (label.value.length > 1 && isLabelSeparator(lastValue)) {
+    return {
+      index,
+      label: { ...label, value: label.value.slice(0, -1) },
+      separatorStart: label.end - 1,
+    };
+  }
+
+  return {
+    index,
+    label,
+    separatorStart: label.end,
+  };
+};
+
+const labelCandidateBeforeSeparator = (
   meta: EmailTextMeta,
   tokens: readonly Token[],
   index: number,
-): number | undefined => {
+): LabelCandidate | undefined => {
   // Hyphen is part of WORD_CHAR_RE, so "Email - user..." can tokenize the
-  // separator as a word token. Walk back across separator tokens before looking
-  // for the actual label word.
+  // separator as a word token. It can also stay attached to the label in
+  // "Email- user...". Normalize that attached form before label classification.
   const local = tokens[index];
   let labelIndex = index - 1;
   while (isLabelSeparatorToken(tokens[labelIndex])) labelIndex -= 1;
 
   const label = tokens[labelIndex];
   if (local === undefined || label?.type !== TOKEN_TYPE.word) return undefined;
-  if (!hasLabelSeparator(meta, label.end, local.start)) return undefined;
+  const candidate = toLabelCandidate(labelIndex, label);
+  if (!hasLabelSeparator(meta, candidate.separatorStart, local.start)) {
+    return undefined;
+  }
 
-  return labelIndex;
+  return candidate;
 };
 
 export const hasEmailLabelContext = (
@@ -70,11 +96,10 @@ export const hasEmailLabelContext = (
   tokens: readonly Token[],
   index: number,
 ): boolean => {
-  const labelIndex = labelIndexBeforeSeparator(meta, tokens, index);
-  if (labelIndex === undefined) return false;
-  const label = tokens[labelIndex];
-  const beforeLabel = previousWordInSamePhrase(meta, tokens, labelIndex);
-  return isEmailLabel(label, beforeLabel);
+  const candidate = labelCandidateBeforeSeparator(meta, tokens, index);
+  if (candidate === undefined) return false;
+  const beforeLabel = previousWordInSamePhrase(meta, tokens, candidate.index);
+  return isEmailLabel(candidate.label, beforeLabel);
 };
 
 export const hasNonEmailProseLabelContext = (
@@ -87,10 +112,9 @@ export const hasNonEmailProseLabelContext = (
   // locals even when the value looks like an obfuscated address.
   if (!isKnownProseLocal(local)) return false;
 
-  const labelIndex = labelIndexBeforeSeparator(meta, tokens, index);
-  if (labelIndex === undefined) return false;
+  const candidate = labelCandidateBeforeSeparator(meta, tokens, index);
+  if (candidate === undefined) return false;
 
-  const label = tokens[labelIndex];
-  const beforeLabel = previousWordInSamePhrase(meta, tokens, labelIndex);
-  return !isEmailLabel(label, beforeLabel);
+  const beforeLabel = previousWordInSamePhrase(meta, tokens, candidate.index);
+  return !isEmailLabel(candidate.label, beforeLabel);
 };

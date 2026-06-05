@@ -196,6 +196,9 @@ describe("@textfilters/email introduced contexts", () => {
     expect(filter.censor("Email - work at example dot com")).toBe(
       "Email - ***********************",
     );
+    expect(filter.censor("Email- work at example dot com")).toBe(
+      "Email- ***********************",
+    );
     expect(filter.censor("Email:\nwork at example dot com")).toBe(
       "Email:\n***********************",
     );
@@ -219,6 +222,9 @@ describe("@textfilters/email introduced contexts", () => {
     );
     expect(filter.censor("Contact us - apply at example dot com")).toBe(
       "Contact us - ************************",
+    );
+    expect(filter.censor("Contact us- apply at example dot com")).toBe(
+      "Contact us- ************************",
     );
     expect(filter.censor("Address: admin at example dot com")).toBe(
       "Address: ************************",
