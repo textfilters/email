@@ -4,7 +4,7 @@ Email address and obfuscated-email filtering for composable text moderation.
 
 ## Installation
 
-Add the GitHub Packages registry for the `@textfilters` scope:
+Add the GitHub Packages registry for the `@textfilters` scope in a project `.npmrc` or user npm config:
 
 ```ini
 @textfilters:registry=https://npm.pkg.github.com
