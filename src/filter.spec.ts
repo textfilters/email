@@ -111,8 +111,23 @@ describe("@textfilters/email", () => {
     expect(filter.censor("send an email to user at example dot com")).toBe(
       "send an email to ***********************",
     );
+    expect(filter.censor("contact via user at example dot com")).toBe(
+      "contact via ***********************",
+    );
+    expect(filter.censor("send via admin at example dot com")).toBe(
+      "send via ************************",
+    );
+    expect(filter.censor("message via support at example dot com")).toBe(
+      "message via **************************",
+    );
     expect(filter.censor("email to admin at example dot com")).toBe(
       "email to ************************",
+    );
+    expect(filter.censor("cc to user at example dot com")).toBe(
+      "cc to ***********************",
+    );
+    expect(filter.censor("bcc via admin at example dot com")).toBe(
+      "bcc via ************************",
     );
     expect(filter.censor("send a message to admin at example dot com")).toBe(
       "send a message to ************************",
@@ -171,6 +186,18 @@ describe("@textfilters/email", () => {
     expect(filter.censor("email the admin at example dot com")).toBe(
       "email the ************************",
     );
+    expect(filter.censor("please cc user at example dot com")).toBe(
+      "please cc ***********************",
+    );
+    expect(filter.censor("bcc admin at example dot com")).toBe(
+      "bcc ************************",
+    );
+    expect(filter.censor("cc the admin at example dot com")).toBe(
+      "cc the ************************",
+    );
+    expect(filter.censor("cc me user at example dot com")).toBe(
+      "cc me ***********************",
+    );
     expect(filter.censor("message the user at example dot com")).toBe(
       "message the ***********************",
     );
@@ -209,6 +236,15 @@ describe("@textfilters/email", () => {
     );
     expect(filter.censor("my email address is user at example dot com")).toBe(
       "my email address is ***********************",
+    );
+    expect(filter.censor("my address is user at example dot com")).toBe(
+      "my address is ***********************",
+    );
+    expect(filter.censor("address is admin at example dot com")).toBe(
+      "address is ************************",
+    );
+    expect(filter.censor("work address is user at example dot com")).toBe(
+      "work address is ***********************",
     );
   });
 
@@ -301,6 +337,12 @@ describe("@textfilters/email", () => {
     );
     expect(filter.censor("contact the form at example dot com")).toBe(
       "contact the form at example dot com",
+    );
+    expect(filter.censor("the contact via page at example dot com")).toBe(
+      "the contact via page at example dot com",
+    );
+    expect(filter.censor("corporate contact via form at example dot com")).toBe(
+      "corporate contact via form at example dot com",
     );
     expect(filter.censor("email the service at example dot com")).toBe(
       "email the service at example dot com",
@@ -413,8 +455,23 @@ describe("@textfilters/email", () => {
     expect(filter.censor("my email is hosted at example dot com")).toBe(
       "my email is hosted at example dot com",
     );
+    expect(filter.censor("my address is hosted at example dot com")).toBe(
+      "my address is hosted at example dot com",
+    );
+    expect(filter.censor("address is located at example dot com")).toBe(
+      "address is located at example dot com",
+    );
+    expect(filter.censor("address is work at example dot com")).toBe(
+      "address is work at example dot com",
+    );
+    expect(filter.censor("work address is located at example dot com")).toBe(
+      "work address is located at example dot com",
+    );
     expect(filter.censor("the email is down at example dot com")).toBe(
       "the email is down at example dot com",
+    );
+    expect(filter.censor("the address is down at example dot com")).toBe(
+      "the address is down at example dot com",
     );
     expect(filter.censor("my email address is hosted at example dot com")).toBe(
       "my email address is hosted at example dot com",

@@ -38,6 +38,8 @@ const WORD_CHAR_RE = /^[a-z0-9_+-]$/u;
 const DOMAIN_LABEL_RE = /^[a-z0-9-]+$/u;
 const TLD_RE = /^[a-z][a-z0-9-]{1,62}$/u;
 const EMAIL_INTRODUCER_WORDS = new Set([
+  "bcc",
+  "cc",
   "contact",
   "e-mail",
   "email",
@@ -51,6 +53,8 @@ const EMAIL_INTRODUCER_WORDS = new Set([
   "write",
 ]);
 const DIRECT_EMAIL_INTRODUCER_WORDS = new Set([
+  "bcc",
+  "cc",
   "contact",
   "e-mail",
   "email",
@@ -60,6 +64,9 @@ const DIRECT_EMAIL_INTRODUCER_WORDS = new Set([
   "reach",
 ]);
 const PREPOSITIONAL_EMAIL_INTRODUCER_WORDS = new Set([
+  "bcc",
+  "cc",
+  "contact",
   "e-mail",
   "email",
   "forward",
@@ -78,13 +85,13 @@ const POSSESSIVE_INTRODUCER_WORDS = new Set([
   "their",
   "your",
 ]);
-const PREPOSITIONAL_INTRODUCER_WORDS = new Set(["to"]);
+const PREPOSITIONAL_INTRODUCER_WORDS = new Set(["to", "via"]);
 const PHRASAL_PARTICLE_WORDS = new Set(["out"]);
 const COPULA_INTRODUCER_WORDS = new Set(["is"]);
 const ADDRESS_NOUN_WORDS = new Set(["address"]);
 const SENDABLE_OBJECT_WORDS = new Set(["it", "that", "this"]);
 const RECIPIENT_OBJECT_WORDS = new Set(["me", "us"]);
-const COPULA_PROSE_LOCAL_WORDS = new Set(["down", "hosted"]);
+const COPULA_PROSE_LOCAL_WORDS = new Set(["down", "hosted", "located"]);
 const DETERMINER_WORDS = new Set([
   "a",
   "an",
@@ -233,7 +240,17 @@ const isDeterminerLedEmailObjectPhrase = (
   isDeterminer(determiner) &&
   !isKnownProseLocal(local);
 
-const hasCommandContextBeforeEmailTo = (
+const isPlainAddressIntroducer = (token: Token | undefined): boolean =>
+  token === undefined || token.type === TOKEN_TYPE.word;
+
+const isAddressCopulaIntroducer = (
+  token: Token | undefined,
+  local: Token,
+): boolean =>
+  isEmailIntroducer(token) ||
+  (isPlainAddressIntroducer(token) && !isKnownProseLocal(local));
+
+const hasCommandContextBeforePrepositionalIntroducer = (
   previous: Token | undefined,
   previousPrevious: Token | undefined,
 ): boolean =>
@@ -255,8 +272,9 @@ const isPrepositionalResourcePhrase = (
     (introducer.value === "e-mail" ||
       introducer.value === "email" ||
       introducer.value === "mail" ||
-      introducer.value === "message") &&
-    !hasCommandContextBeforeEmailTo(previous, previousPrevious)
+      introducer.value === "message" ||
+      introducer.value === "contact") &&
+    !hasCommandContextBeforePrepositionalIntroducer(previous, previousPrevious)
   ) {
     return true;
   }
@@ -395,7 +413,7 @@ const hasEmailIntroducerContext = (
   if (
     isCopulaIntroducer(previous) &&
     isAddressNoun(beforePrevious) &&
-    isEmailIntroducer(beforeBeforePrevious) &&
+    isAddressCopulaIntroducer(beforeBeforePrevious, local) &&
     !COPULA_PROSE_LOCAL_WORDS.has(local.value)
   ) {
     return true;
