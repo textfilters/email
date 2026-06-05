@@ -123,7 +123,7 @@ The scanner intentionally avoids:
 
 ## Release Flow
 
-Release Please manages releases from Conventional Commit history on `master`. The release workflow opens or updates release PRs, and when a Release Please release is created it runs checks and publishes the package to GitHub Packages. Release tags keep the `v*` pattern.
+Release Please manages releases from Conventional Commit history on `main`. The release workflow opens or updates release PRs, and when a Release Please release is created it runs checks and publishes the package to GitHub Packages. Release tags keep the `v*` pattern.
 
 ## Safety Rules
 
