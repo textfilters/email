@@ -60,7 +60,7 @@ const POSSESSIVE_INTRODUCER_WORDS = new Set([
 const PREPOSITIONAL_INTRODUCER_WORDS = new Set(["to"]);
 const COPULA_INTRODUCER_WORDS = new Set(["is"]);
 const ADDRESS_NOUN_WORDS = new Set(["address"]);
-const DIRECT_OBJECT_WORDS = new Set(["it", "that", "this"]);
+const DIRECT_OBJECT_WORDS = new Set(["it", "me", "that", "this", "us"]);
 const DETERMINER_WORDS = new Set([
   "a",
   "an",
@@ -206,6 +206,9 @@ const hasEmailIntroducerContext = (
     isDirectObject(beforePrevious) &&
     isEmailIntroducer(beforeBeforePrevious)
   ) {
+    return true;
+  }
+  if (isDirectObject(previous) && isEmailIntroducer(beforePrevious)) {
     return true;
   }
 
