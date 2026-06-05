@@ -180,6 +180,15 @@ describe("@textfilters/email", () => {
     expect(filter.censor("please reply back to user at example dot com")).toBe(
       "please reply back to ***********************",
     );
+    expect(filter.censor("please respond to user at example dot com")).toBe(
+      "please respond to ***********************",
+    );
+    expect(filter.censor("respond via admin at example dot com")).toBe(
+      "respond via ************************",
+    );
+    expect(
+      filter.censor("please respond back to user at example dot com"),
+    ).toBe("please respond back to ***********************");
     expect(filter.censor("please reach out to user at example dot com")).toBe(
       "please reach out to ***********************",
     );
@@ -252,14 +261,29 @@ describe("@textfilters/email", () => {
     expect(filter.censor("my email is user at example dot com")).toBe(
       "my email is ***********************",
     );
+    expect(filter.censor("my old email was user at example dot com")).toBe(
+      "my old email was ***********************",
+    );
     expect(filter.censor("my email address is user at example dot com")).toBe(
       "my email address is ***********************",
+    );
+    expect(filter.censor("our address was admin at example dot com")).toBe(
+      "our address was ************************",
     );
     expect(filter.censor("Email: work at example dot com")).toBe(
       "Email: ***********************",
     );
+    expect(filter.censor("Email - work at example dot com")).toBe(
+      "Email - ***********************",
+    );
+    expect(filter.censor("Email:\nwork at example dot com")).toBe(
+      "Email:\n***********************",
+    );
     expect(filter.censor("Contact: apply at example dot com")).toBe(
       "Contact: ************************",
+    );
+    expect(filter.censor("Contact us - apply at example dot com")).toBe(
+      "Contact us - ************************",
     );
     expect(filter.censor("Address: admin at example dot com")).toBe(
       "Address: ************************",
@@ -278,6 +302,23 @@ describe("@textfilters/email", () => {
     );
     expect(filter.censor("work address is user at example dot com")).toBe(
       "work address is ***********************",
+    );
+  });
+
+  it("masks additional obfuscated email addresses in introduced lists", () => {
+    const user = "user at example dot com";
+    const admin = "admin at example dot com";
+    const work = "work at example dot com";
+    const apply = "apply at example dot com";
+
+    expect(filter.censor(`email ${user} and ${admin}`)).toBe(
+      `email ${"*".repeat(user.length)} and ${"*".repeat(admin.length)}`,
+    );
+    expect(filter.censor(`contact ${user} or ${admin}`)).toBe(
+      `contact ${"*".repeat(user.length)} or ${"*".repeat(admin.length)}`,
+    );
+    expect(filter.censor(`Email: ${work} and ${apply}`)).toBe(
+      `Email: ${"*".repeat(work.length)} and ${"*".repeat(apply.length)}`,
     );
   });
 
@@ -455,6 +496,18 @@ describe("@textfilters/email", () => {
     expect(filter.censor("Note: work at example dot com")).toBe(
       "Note: work at example dot com",
     );
+    expect(filter.censor("Note - work at example dot com")).toBe(
+      "Note - work at example dot com",
+    );
+    expect(filter.censor("Note:\nwork at example dot com")).toBe(
+      "Note:\nwork at example dot com",
+    );
+    expect(
+      filter.censor("work at example dot com and admin at example dot com"),
+    ).toBe("work at example dot com and admin at example dot com");
+    expect(
+      filter.censor("we work at example dot com and admin at example dot com"),
+    ).toBe("we work at example dot com and admin at example dot com");
     expect(filter.censor("try to shop at example dot com")).toBe(
       "try to shop at example dot com",
     );
@@ -488,6 +541,15 @@ describe("@textfilters/email", () => {
     expect(filter.censor("please reply back to work at example dot com")).toBe(
       "please reply back to work at example dot com",
     );
+    expect(filter.censor("respond to work at example dot com")).toBe(
+      "respond to work at example dot com",
+    );
+    expect(filter.censor("respond via service at example dot com")).toBe(
+      "respond via service at example dot com",
+    );
+    expect(
+      filter.censor("please respond back to work at example dot com"),
+    ).toBe("please respond back to work at example dot com");
     expect(filter.censor("send this form at example dot com")).toBe(
       "send this form at example dot com",
     );
@@ -515,8 +577,14 @@ describe("@textfilters/email", () => {
     expect(filter.censor("my email is hosted at example dot com")).toBe(
       "my email is hosted at example dot com",
     );
+    expect(filter.censor("my old email was hosted at example dot com")).toBe(
+      "my old email was hosted at example dot com",
+    );
     expect(filter.censor("my address is hosted at example dot com")).toBe(
       "my address is hosted at example dot com",
+    );
+    expect(filter.censor("our address was located at example dot com")).toBe(
+      "our address was located at example dot com",
     );
     expect(filter.censor("address is located at example dot com")).toBe(
       "address is located at example dot com",
@@ -529,6 +597,9 @@ describe("@textfilters/email", () => {
     );
     expect(filter.censor("the email is down at example dot com")).toBe(
       "the email is down at example dot com",
+    );
+    expect(filter.censor("the email was down at example dot com")).toBe(
+      "the email was down at example dot com",
     );
     expect(filter.censor("the address is down at example dot com")).toBe(
       "the address is down at example dot com",

@@ -47,6 +47,7 @@ const EMAIL_INTRODUCER_WORDS = new Set([
   "mail",
   "message",
   "reach",
+  "respond",
   "reply",
   "send",
   "try",
@@ -72,6 +73,7 @@ const PREPOSITIONAL_EMAIL_INTRODUCER_WORDS = new Set([
   "forward",
   "mail",
   "message",
+  "respond",
   "reply",
   "send",
   "write",
@@ -84,7 +86,7 @@ const OBJECT_PREPOSITIONAL_EMAIL_INTRODUCER_WORDS = new Set([
   "message",
   "send",
 ]);
-const PHRASAL_EMAIL_INTRODUCER_WORDS = new Set(["reach", "reply"]);
+const PHRASAL_EMAIL_INTRODUCER_WORDS = new Set(["reach", "reply", "respond"]);
 const POSSESSIVE_INTRODUCER_WORDS = new Set([
   "her",
   "his",
@@ -95,9 +97,10 @@ const POSSESSIVE_INTRODUCER_WORDS = new Set([
 ]);
 const PREPOSITIONAL_INTRODUCER_WORDS = new Set(["to", "via"]);
 const PHRASAL_PARTICLE_WORDS = new Set(["back", "out"]);
-const COPULA_INTRODUCER_WORDS = new Set(["is"]);
+const COPULA_INTRODUCER_WORDS = new Set(["is", "was"]);
 const ADDRESS_NOUN_WORDS = new Set(["address"]);
-const LABEL_SEPARATOR_WORDS = new Set([":"]);
+const LABEL_SEPARATOR_WORDS = new Set([":", "-"]);
+const ADDRESS_LIST_CONJUNCTION_WORDS = new Set(["and", "or"]);
 const SENDABLE_OBJECT_WORDS = new Set(["it", "that", "this"]);
 const RECIPIENT_OBJECT_WORDS = new Set(["me", "us"]);
 const COPULA_PROSE_LOCAL_WORDS = new Set(["down", "hosted", "located"]);
@@ -224,8 +227,15 @@ const isCopulaIntroducer = (token: Token | undefined): boolean =>
 const isAddressNoun = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && ADDRESS_NOUN_WORDS.has(token.value);
 
+const isAddressListConjunction = (token: Token | undefined): token is Token =>
+  token?.type === TOKEN_TYPE.word &&
+  ADDRESS_LIST_CONJUNCTION_WORDS.has(token.value);
+
 const isLabelSeparator = (value: string): boolean =>
   LABEL_SEPARATOR_WORDS.has(value);
+
+const isLabelSeparatorToken = (token: Token | undefined): token is Token =>
+  token?.type === TOKEN_TYPE.word && isLabelSeparator(token.value);
 
 const isSendableObject = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && SENDABLE_OBJECT_WORDS.has(token.value);
@@ -287,6 +297,7 @@ const isPrepositionalResourcePhrase = (
   if (!isKnownProseLocal(local)) return false;
   if (introducer?.type !== TOKEN_TYPE.word) return false;
   if (preposition.value === "via") return true;
+  if (introducer.value === "respond") return true;
   if (introducer.value === "forward") return isForwardProseLocal(local);
   if (
     (introducer.value === "e-mail" ||
@@ -358,7 +369,7 @@ const hasLabelSeparator = (
       seenLabelSeparator = true;
       continue;
     }
-    if (!isHorizontalWhitespace(value)) return false;
+    if (!isWhitespace(value)) return false;
   }
   return seenLabelSeparator;
 };
@@ -378,14 +389,99 @@ const hasEmailLabelContext = (
   index: number,
 ): boolean => {
   const local = tokens[index];
-  const label = tokens[index - 1];
+  let labelIndex = index - 1;
+  while (isLabelSeparatorToken(tokens[labelIndex])) labelIndex -= 1;
+
+  const label = tokens[labelIndex];
   if (local === undefined || label?.type !== TOKEN_TYPE.word) return false;
 
-  const beforeLabel = previousWordInSamePhrase(meta, tokens, index - 1);
+  const beforeLabel = previousWordInSamePhrase(meta, tokens, labelIndex);
   return (
     isEmailLabel(label, beforeLabel) &&
     hasLabelSeparator(meta, label.end, local.start)
   );
+};
+
+const isDefaultMultiLabelDomain = (labels: readonly string[]): boolean =>
+  labels.length > 1 &&
+  labels.every((label) => {
+    if (label.length === 0 || label.length > 63) return false;
+    if (label.startsWith("-") || label.endsWith("-")) return false;
+    return DOMAIN_LABEL_RE.test(label);
+  }) &&
+  TLD_RE.test(labels[labels.length - 1]);
+
+const previousObfuscatedAddressLocalIndex = (
+  tokens: readonly Token[],
+  endIndex: number,
+): number | undefined => {
+  let cursor = endIndex;
+  const lastLabel = tokens[cursor];
+  if (lastLabel?.type !== TOKEN_TYPE.word) return undefined;
+
+  const labels = [lastLabel.value];
+  cursor -= 1;
+  while (
+    tokens[cursor]?.type === TOKEN_TYPE.dot &&
+    tokens[cursor - 1]?.type === TOKEN_TYPE.word
+  ) {
+    labels.unshift(tokens[cursor - 1].value);
+    cursor -= 2;
+  }
+
+  if (!isDefaultMultiLabelDomain(labels)) return undefined;
+  if (tokens[cursor]?.type !== TOKEN_TYPE.at) return undefined;
+
+  const localIndex = cursor - 1;
+  const local = tokens[localIndex];
+  if (
+    local?.type !== TOKEN_TYPE.word ||
+    local.value.length < 3 ||
+    !isValidLocal(local.value)
+  ) {
+    return undefined;
+  }
+
+  return localIndex;
+};
+
+const previousAddressListLocalIndex = (
+  meta: EmailTextMeta,
+  tokens: readonly Token[],
+  index: number,
+  local: Token,
+): number | undefined => {
+  const conjunctionIndex = index - 1;
+  const conjunction = tokens[conjunctionIndex];
+  if (!isAddressListConjunction(conjunction)) return undefined;
+  if (!isSameProsePhrase(meta, conjunction, local)) return undefined;
+
+  const priorEndIndex = conjunctionIndex - 1;
+  const priorEnd = tokens[priorEndIndex];
+  if (
+    priorEnd === undefined ||
+    !isSameProsePhrase(meta, priorEnd, conjunction)
+  ) {
+    return undefined;
+  }
+
+  const priorLocalIndex = previousObfuscatedAddressLocalIndex(
+    tokens,
+    priorEndIndex,
+  );
+  if (priorLocalIndex === undefined) return undefined;
+
+  const priorLocal = tokens[priorLocalIndex];
+  if (
+    priorLocal !== undefined &&
+    SENTENCE_INITIAL_PROSE_LOCAL_WORDS.has(priorLocal.value) &&
+    previousWordInSamePhrase(meta, tokens, priorLocalIndex) === undefined &&
+    !hasEmailLabelContext(meta, tokens, priorLocalIndex)
+  ) {
+    return undefined;
+  }
+
+  return priorLocalIndex;
 };
 
 const hasPrepositionalNounObjectContext = (
@@ -461,6 +557,29 @@ const hasEmailIntroducerContext = (
   index: number,
   local: Token,
 ): boolean => {
+  if (hasEmailLabelContext(meta, tokens, index)) return true;
+
+  const priorListLocalIndex = previousAddressListLocalIndex(
+    meta,
+    tokens,
+    index,
+    local,
+  );
+  if (priorListLocalIndex !== undefined) {
+    const priorListLocal = tokens[priorListLocalIndex];
+    if (
+      priorListLocal !== undefined &&
+      hasEmailIntroducerContext(
+        meta,
+        tokens,
+        priorListLocalIndex,
+        priorListLocal,
+      )
+    ) {
+      return true;
+    }
+  }
+
   const previous = previousWordInSamePhrase(meta, tokens, index);
   if (previous === undefined) return true;
 
