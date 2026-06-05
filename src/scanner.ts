@@ -260,6 +260,7 @@ const hasCommandContextBeforePrepositionalIntroducer = (
   (isDeterminer(previous) && isPrepositionalEmailIntroducer(previousPrevious));
 
 const isPrepositionalResourcePhrase = (
+  preposition: Token,
   introducer: Token | undefined,
   previous: Token | undefined,
   previousPrevious: Token | undefined,
@@ -267,6 +268,7 @@ const isPrepositionalResourcePhrase = (
 ): boolean => {
   if (!isKnownProseLocal(local)) return false;
   if (introducer?.type !== TOKEN_TYPE.word) return false;
+  if (preposition.value === "via") return true;
   if (introducer.value === "forward") return isForwardProseLocal(local);
   if (
     (introducer.value === "e-mail" ||
@@ -347,6 +349,7 @@ const hasPrepositionalEmailIntroducerContext = (
   );
   if (isPrepositionalEmailIntroducer(beforePreposition)) {
     return !isPrepositionalResourcePhrase(
+      preposition,
       beforePreposition,
       beforeBeforePreposition,
       beforeBeforeBeforePreposition,

@@ -120,6 +120,12 @@ describe("@textfilters/email", () => {
     expect(filter.censor("message via support at example dot com")).toBe(
       "message via **************************",
     );
+    expect(filter.censor("contact via admin at example dot com")).toBe(
+      "contact via ************************",
+    );
+    expect(filter.censor("please contact via support at example dot com")).toBe(
+      "please contact via **************************",
+    );
     expect(filter.censor("email to admin at example dot com")).toBe(
       "email to ************************",
     );
@@ -343,6 +349,21 @@ describe("@textfilters/email", () => {
     );
     expect(filter.censor("corporate contact via form at example dot com")).toBe(
       "corporate contact via form at example dot com",
+    );
+    expect(filter.censor("please contact via form at example dot com")).toBe(
+      "please contact via form at example dot com",
+    );
+    expect(filter.censor("contact via page at example dot com")).toBe(
+      "contact via page at example dot com",
+    );
+    expect(filter.censor("send via service at example dot com")).toBe(
+      "send via service at example dot com",
+    );
+    expect(filter.censor("message via code at example dot com")).toBe(
+      "message via code at example dot com",
+    );
+    expect(filter.censor("contact via work at example dot com")).toBe(
+      "contact via work at example dot com",
     );
     expect(filter.censor("email the service at example dot com")).toBe(
       "email the service at example dot com",
