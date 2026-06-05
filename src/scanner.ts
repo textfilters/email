@@ -198,6 +198,29 @@ const previousWordInSamePhrase = (
   return previous;
 };
 
+const hasPrepositionalEmailIntroducerContext = (
+  meta: EmailTextMeta,
+  tokens: readonly Token[],
+  index: number,
+): boolean => {
+  const preposition = tokens[index];
+  if (!isPrepositionalIntroducer(preposition)) return false;
+
+  const beforePreposition = previousWordInSamePhrase(meta, tokens, index);
+  if (isEmailIntroducer(beforePreposition)) return true;
+
+  const beforeBeforePreposition = previousWordInSamePhrase(
+    meta,
+    tokens,
+    index - 1,
+  );
+  return (
+    (isDirectObject(beforePreposition) ||
+      isPhrasalParticle(beforePreposition)) &&
+    isEmailIntroducer(beforeBeforePreposition)
+  );
+};
+
 const hasEmailIntroducerContext = (
   meta: EmailTextMeta,
   tokens: readonly Token[],
@@ -216,30 +239,12 @@ const hasEmailIntroducerContext = (
     );
   }
 
-  if (
-    isPrepositionalIntroducer(previous) &&
-    isEmailIntroducer(beforePrevious)
-  ) {
-    return true;
-  }
-
   const beforeBeforePrevious = previousWordInSamePhrase(
     meta,
     tokens,
     index - 2,
   );
-  if (
-    isPrepositionalIntroducer(previous) &&
-    isDirectObject(beforePrevious) &&
-    isEmailIntroducer(beforeBeforePrevious)
-  ) {
-    return true;
-  }
-  if (
-    isPrepositionalIntroducer(previous) &&
-    isPhrasalParticle(beforePrevious) &&
-    isEmailIntroducer(beforeBeforePrevious)
-  ) {
+  if (hasPrepositionalEmailIntroducerContext(meta, tokens, index - 1)) {
     return true;
   }
   if (isDirectObject(previous) && isEmailIntroducer(beforePrevious)) {
@@ -262,19 +267,11 @@ const hasEmailIntroducerContext = (
     return true;
   }
 
-  const beforeBeforeBeforePrevious = previousWordInSamePhrase(
-    meta,
-    tokens,
-    index - 3,
-  );
   if (
     isPossessiveIntroducer(previous) &&
     (beforePrevious === undefined ||
       isEmailIntroducer(beforePrevious) ||
-      (isPrepositionalIntroducer(beforePrevious) &&
-        (isEmailIntroducer(beforeBeforePrevious) ||
-          (isPhrasalParticle(beforeBeforePrevious) &&
-            isEmailIntroducer(beforeBeforeBeforePrevious)))))
+      hasPrepositionalEmailIntroducerContext(meta, tokens, index - 2))
   ) {
     return true;
   }

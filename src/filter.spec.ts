@@ -114,6 +114,12 @@ describe("@textfilters/email", () => {
     expect(filter.censor("send this to admin at example dot com")).toBe(
       "send this to ************************",
     );
+    expect(filter.censor("send it to our support at example dot com")).toBe(
+      "send it to our **************************",
+    );
+    expect(filter.censor("send this to your admin at example dot com")).toBe(
+      "send this to your ************************",
+    );
     expect(filter.censor("email me user at example dot com")).toBe(
       "email me ***********************",
     );
