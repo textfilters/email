@@ -7,9 +7,9 @@ import {
   isLabelSeparatorToken,
   isRecipientObject,
   SCANNER_WORD,
-} from "../rules/index.js";
+} from "../rules.js";
 import { previousWordInSamePhrase } from "./phrase.js";
-import { TOKEN_TYPE, type Token } from "../core/types.js";
+import { TOKEN_TYPE, type Token } from "../core.js";
 
 const hasLabelSeparator = (
   meta: EmailTextMeta,

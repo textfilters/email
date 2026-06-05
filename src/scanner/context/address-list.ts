@@ -5,8 +5,8 @@ import {
   isAddressListConjunction,
   isValidDomain,
   isValidLocal,
-} from "../rules/index.js";
-import { TOKEN_TYPE, type ScannerOptions, type Token } from "../core/types.js";
+} from "../rules.js";
+import { TOKEN_TYPE, type ScannerOptions, type Token } from "../core.js";
 
 const DEFAULT_DOMAIN_OPTIONS: ScannerOptions = {
   allowLocalhost: false,

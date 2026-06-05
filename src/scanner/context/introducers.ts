@@ -22,8 +22,8 @@ import {
   isPrepositionalIntroducer,
   isRecipientObject,
   isSendableObject,
-} from "../rules/index.js";
-import { TOKEN_TYPE, type Token } from "../core/types.js";
+} from "../rules.js";
+import { TOKEN_TYPE, type Token } from "../core.js";
 
 const isContactResourcePhrase = (
   introducer: Token | undefined,

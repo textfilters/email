@@ -4,8 +4,8 @@ import {
   hasNonEmailProseLabelContext,
 } from "./labels.js";
 import { previousWordInSamePhrase } from "./phrase.js";
-import { type Token } from "../core/types.js";
-import { isKnownProseLocal } from "../rules/index.js";
+import { type Token } from "../core.js";
+import { isKnownProseLocal } from "../rules.js";
 
 export const hasProseLocalContext = (
   meta: EmailTextMeta,

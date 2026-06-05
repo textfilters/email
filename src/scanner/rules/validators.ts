@@ -2,7 +2,7 @@ import {
   SCANNER_PUNCTUATION,
   TOKEN_VALUE,
   type ScannerOptions,
-} from "../core/types.js";
+} from "../core.js";
 
 const LOCAL_CHAR_RE = /^[a-z0-9._%+-]$/u;
 const WORD_CHAR_RE = /^[a-z0-9_+-]$/u;
