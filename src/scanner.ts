@@ -44,6 +44,7 @@ const EMAIL_INTRODUCER_WORDS = new Set([
   "mail",
   "message",
   "reach",
+  "reply",
   "send",
   "write",
 ]);
@@ -58,6 +59,7 @@ const POSSESSIVE_INTRODUCER_WORDS = new Set([
 const PREPOSITIONAL_INTRODUCER_WORDS = new Set(["to"]);
 const COPULA_INTRODUCER_WORDS = new Set(["is"]);
 const ADDRESS_NOUN_WORDS = new Set(["address"]);
+const DIRECT_OBJECT_WORDS = new Set(["it", "that", "this"]);
 const DETERMINER_WORDS = new Set([
   "a",
   "an",
@@ -127,6 +129,9 @@ const isCopulaIntroducer = (token: Token | undefined): boolean =>
 const isAddressNoun = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && ADDRESS_NOUN_WORDS.has(token.value);
 
+const isDirectObject = (token: Token | undefined): boolean =>
+  token?.type === TOKEN_TYPE.word && DIRECT_OBJECT_WORDS.has(token.value);
+
 const isDeterminer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && DETERMINER_WORDS.has(token.value);
 
@@ -193,6 +198,14 @@ const hasEmailIntroducerContext = (
     tokens,
     index - 2,
   );
+  if (
+    isPrepositionalIntroducer(previous) &&
+    isDirectObject(beforePrevious) &&
+    isEmailIntroducer(beforeBeforePrevious)
+  ) {
+    return true;
+  }
+
   if (isCopulaIntroducer(previous) && isEmailIntroducer(beforePrevious)) {
     return true;
   }
