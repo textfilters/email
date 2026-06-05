@@ -23,7 +23,7 @@ import {
   isRecipientObject,
   isSendableObject,
 } from "../rules.js";
-import { TOKEN_TYPE, type Token } from "../core.js";
+import { TOKEN_TYPE, type ScannerOptions, type Token } from "../core.js";
 
 const isContactResourcePhrase = (
   introducer: Token | undefined,
@@ -179,6 +179,7 @@ export const hasEmailIntroducerContext = (
   tokens: readonly Token[],
   index: number,
   local: Token,
+  options: ScannerOptions,
 ): boolean => {
   if (hasEmailLabelContext(meta, tokens, index)) return true;
 
@@ -190,6 +191,7 @@ export const hasEmailIntroducerContext = (
     tokens,
     index,
     local,
+    options,
   );
   if (priorListLocalIndex !== undefined) {
     const priorListLocal = tokens[priorListLocalIndex];
@@ -200,6 +202,7 @@ export const hasEmailIntroducerContext = (
         tokens,
         priorListLocalIndex,
         priorListLocal,
+        options,
       )
     ) {
       return true;

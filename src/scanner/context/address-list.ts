@@ -8,14 +8,10 @@ import {
 } from "../rules.js";
 import { TOKEN_TYPE, type ScannerOptions, type Token } from "../core.js";
 
-const DEFAULT_DOMAIN_OPTIONS: ScannerOptions = {
-  allowLocalhost: false,
-  allowSingleLabelDomain: false,
-};
-
 const previousObfuscatedAddressLocalIndex = (
   tokens: readonly Token[],
   endIndex: number,
+  options: ScannerOptions,
 ): number | undefined => {
   // Walk backward over "label dot label" domain tokens to find the local part
   // before the matching "at". This is only used for list-context inheritance.
@@ -33,7 +29,7 @@ const previousObfuscatedAddressLocalIndex = (
     cursor -= 2;
   }
 
-  if (!isValidDomain(labels, DEFAULT_DOMAIN_OPTIONS)) return undefined;
+  if (!isValidDomain(labels, options)) return undefined;
   if (tokens[cursor]?.type !== TOKEN_TYPE.at) return undefined;
 
   const localIndex = cursor - 1;
@@ -54,6 +50,7 @@ export const previousAddressListLocalIndex = (
   tokens: readonly Token[],
   index: number,
   local: Token,
+  options: ScannerOptions,
 ): number | undefined => {
   const conjunctionIndex = index - 1;
   const conjunction = tokens[conjunctionIndex];
@@ -72,6 +69,7 @@ export const previousAddressListLocalIndex = (
   const priorLocalIndex = previousObfuscatedAddressLocalIndex(
     tokens,
     priorEndIndex,
+    options,
   );
   if (priorLocalIndex === undefined) return undefined;
 

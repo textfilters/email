@@ -86,7 +86,7 @@ const collectObfuscatedRanges = (
   const tokens = tokenize(meta);
   const ranges: TextCodePointRange[] = [];
 
-  for (let i = 0; i < tokens.length - 4; i++) {
+  for (let i = 0; i < tokens.length - 2; i++) {
     const local = tokens[i];
     const at = tokens[i + 1];
     if (local.type !== TOKEN_TYPE.word || at.type !== TOKEN_TYPE.at) continue;
@@ -108,7 +108,7 @@ const collectObfuscatedRanges = (
     }
 
     if (!isValidDomain(labels, options)) continue;
-    if (isProseBareAtPhrase(meta, tokens, i, local, at)) continue;
+    if (isProseBareAtPhrase(meta, tokens, i, local, at, options)) continue;
 
     const endToken = tokens[cursor - 1];
     if (!hasBoundary(previousContent(meta, local.start - 1))) continue;

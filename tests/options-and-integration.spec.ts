@@ -19,6 +19,19 @@ describe("@textfilters/email options and integration", () => {
     expect(
       createEmailFilter({ allowLocalhost: true }).censor("mail user@localhost"),
     ).toBe("mail **************");
+    expect(
+      createEmailFilter({ allowLocalhost: true }).censor(
+        "email admin at localhost",
+      ),
+    ).toBe("email ******************");
+
+    const user = "user at localhost";
+    const admin = "admin at localhost";
+    expect(
+      createEmailFilter({ allowLocalhost: true }).censor(
+        `email ${user} and ${admin}`,
+      ),
+    ).toBe(`email ${"*".repeat(user.length)} and ${"*".repeat(admin.length)}`);
   });
 
   it("supports single-label domains when configured", () => {
@@ -27,6 +40,19 @@ describe("@textfilters/email options and integration", () => {
         "mail user@example",
       ),
     ).toBe("mail ************");
+    expect(
+      createEmailFilter({ allowSingleLabelDomain: true }).censor(
+        "email admin at example",
+      ),
+    ).toBe("email ****************");
+
+    const user = "user at example";
+    const admin = "admin at example";
+    expect(
+      createEmailFilter({ allowSingleLabelDomain: true }).censor(
+        `email ${user} and ${admin}`,
+      ),
+    ).toBe(`email ${"*".repeat(user.length)} and ${"*".repeat(admin.length)}`);
   });
 
   it("is idempotent", () => {
