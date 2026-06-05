@@ -83,7 +83,13 @@ const DETERMINER_WORDS = new Set([
   "this",
   "your",
 ]);
-const ADJECTIVE_INTRODUCER_WORDS = new Set(["email", "mail", "message"]);
+const ADJECTIVE_INTRODUCER_WORDS = new Set([
+  "contact",
+  "e-mail",
+  "email",
+  "mail",
+  "message",
+]);
 const SENTENCE_INITIAL_PROSE_LOCAL_WORDS = new Set([
   "apply",
   "located",
