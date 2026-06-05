@@ -76,7 +76,15 @@ const PREPOSITIONAL_EMAIL_INTRODUCER_WORDS = new Set([
   "send",
   "write",
 ]);
-const PHRASAL_EMAIL_INTRODUCER_WORDS = new Set(["reach"]);
+const OBJECT_PREPOSITIONAL_EMAIL_INTRODUCER_WORDS = new Set([
+  "e-mail",
+  "email",
+  "forward",
+  "mail",
+  "message",
+  "send",
+]);
+const PHRASAL_EMAIL_INTRODUCER_WORDS = new Set(["reach", "reply"]);
 const POSSESSIVE_INTRODUCER_WORDS = new Set([
   "her",
   "his",
@@ -86,9 +94,10 @@ const POSSESSIVE_INTRODUCER_WORDS = new Set([
   "your",
 ]);
 const PREPOSITIONAL_INTRODUCER_WORDS = new Set(["to", "via"]);
-const PHRASAL_PARTICLE_WORDS = new Set(["out"]);
+const PHRASAL_PARTICLE_WORDS = new Set(["back", "out"]);
 const COPULA_INTRODUCER_WORDS = new Set(["is"]);
 const ADDRESS_NOUN_WORDS = new Set(["address"]);
+const LABEL_SEPARATOR_WORDS = new Set([":"]);
 const SENDABLE_OBJECT_WORDS = new Set(["it", "that", "this"]);
 const RECIPIENT_OBJECT_WORDS = new Set(["me", "us"]);
 const COPULA_PROSE_LOCAL_WORDS = new Set(["down", "hosted", "located"]);
@@ -188,6 +197,12 @@ const isPrepositionalEmailIntroducer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word &&
   PREPOSITIONAL_EMAIL_INTRODUCER_WORDS.has(token.value);
 
+const isObjectPrepositionalEmailIntroducer = (
+  token: Token | undefined,
+): boolean =>
+  token?.type === TOKEN_TYPE.word &&
+  OBJECT_PREPOSITIONAL_EMAIL_INTRODUCER_WORDS.has(token.value);
+
 const isPhrasalEmailIntroducer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word &&
   PHRASAL_EMAIL_INTRODUCER_WORDS.has(token.value);
@@ -208,6 +223,9 @@ const isCopulaIntroducer = (token: Token | undefined): boolean =>
 
 const isAddressNoun = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && ADDRESS_NOUN_WORDS.has(token.value);
+
+const isLabelSeparator = (value: string): boolean =>
+  LABEL_SEPARATOR_WORDS.has(value);
 
 const isSendableObject = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && SENDABLE_OBJECT_WORDS.has(token.value);
@@ -327,6 +345,66 @@ const previousWordInSamePhrase = (
   return previous;
 };
 
+const hasLabelSeparator = (
+  meta: EmailTextMeta,
+  start: number,
+  end: number,
+): boolean => {
+  let seenLabelSeparator = false;
+  for (let i = start; i < end; i++) {
+    if (meta.zeroWidth[i]) continue;
+    const value = meta.normalized[i];
+    if (isLabelSeparator(value)) {
+      seenLabelSeparator = true;
+      continue;
+    }
+    if (!isHorizontalWhitespace(value)) return false;
+  }
+  return seenLabelSeparator;
+};
+
+const isEmailLabel = (
+  label: Token | undefined,
+  beforeLabel: Token | undefined,
+): boolean =>
+  isEmailIntroducer(label) ||
+  (isAddressNoun(label) &&
+    (beforeLabel === undefined || isEmailIntroducer(beforeLabel))) ||
+  (isRecipientObject(label) && isEmailIntroducer(beforeLabel));
+
+const hasEmailLabelContext = (
+  meta: EmailTextMeta,
+  tokens: readonly Token[],
+  index: number,
+): boolean => {
+  const local = tokens[index];
+  const label = tokens[index - 1];
+  if (local === undefined || label?.type !== TOKEN_TYPE.word) return false;
+
+  const beforeLabel = previousWordInSamePhrase(meta, tokens, index - 1);
+  return (
+    isEmailLabel(label, beforeLabel) &&
+    hasLabelSeparator(meta, label.end, local.start)
+  );
+};
+
+const hasPrepositionalNounObjectContext = (
+  preposition: Token,
+  object: Token | undefined,
+  beforeObject: Token | undefined,
+  beforeBeforeObject: Token | undefined,
+  local: Token,
+): boolean => {
+  if (preposition.value !== "to") return false;
+  if (object?.type !== TOKEN_TYPE.word || isKnownProseLocal(local))
+    return false;
+  return (
+    isObjectPrepositionalEmailIntroducer(beforeObject) ||
+    (isDeterminer(beforeObject) &&
+      isObjectPrepositionalEmailIntroducer(beforeBeforeObject))
+  );
+};
+
 const hasPrepositionalEmailIntroducerContext = (
   meta: EmailTextMeta,
   tokens: readonly Token[],
@@ -359,9 +437,21 @@ const hasPrepositionalEmailIntroducerContext = (
   if (isSendableObject(beforePreposition)) {
     return isPrepositionalEmailIntroducer(beforeBeforePreposition);
   }
+  if (
+    hasPrepositionalNounObjectContext(
+      preposition,
+      beforePreposition,
+      beforeBeforePreposition,
+      beforeBeforeBeforePreposition,
+      local,
+    )
+  ) {
+    return true;
+  }
   return (
     isPhrasalParticle(beforePreposition) &&
-    isPhrasalEmailIntroducer(beforeBeforePreposition)
+    isPhrasalEmailIntroducer(beforeBeforePreposition) &&
+    !isKnownProseLocal(local)
   );
 };
 
@@ -441,7 +531,8 @@ const isSentenceInitialProseBareAtPhrase = (
   local: Token,
 ): boolean =>
   SENTENCE_INITIAL_PROSE_LOCAL_WORDS.has(local.value) &&
-  previousWordInSamePhrase(meta, tokens, index) === undefined;
+  previousWordInSamePhrase(meta, tokens, index) === undefined &&
+  !hasEmailLabelContext(meta, tokens, index);
 
 const isProseBareAtPhrase = (
   meta: EmailTextMeta,
