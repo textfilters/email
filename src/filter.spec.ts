@@ -168,6 +168,12 @@ describe("@textfilters/email", () => {
     expect(filter.censor("email service at example dot com")).toBe(
       "email **************************",
     );
+    expect(filter.censor("email the admin at example dot com")).toBe(
+      "email the ************************",
+    );
+    expect(filter.censor("message the user at example dot com")).toBe(
+      "message the ***********************",
+    );
     expect(filter.censor("please email service at example dot com")).toBe(
       "please email **************************",
     );
@@ -182,6 +188,12 @@ describe("@textfilters/email", () => {
     );
     expect(filter.censor("forward service at example dot com")).toBe(
       "forward **************************",
+    );
+    expect(filter.censor("please reach user at example dot com")).toBe(
+      "please reach ***********************",
+    );
+    expect(filter.censor("reach service at example dot com")).toBe(
+      "reach **************************",
     );
   });
 
@@ -278,11 +290,32 @@ describe("@textfilters/email", () => {
     expect(filter.censor("the contact me form at example dot com")).toBe(
       "the contact me form at example dot com",
     );
+    expect(filter.censor("contact the page at example dot com")).toBe(
+      "contact the page at example dot com",
+    );
+    expect(filter.censor("contact the form at example dot com")).toBe(
+      "contact the form at example dot com",
+    );
+    expect(filter.censor("email the service at example dot com")).toBe(
+      "email the service at example dot com",
+    );
+    expect(filter.censor("email this form at example dot com")).toBe(
+      "email this form at example dot com",
+    );
+    expect(filter.censor("message this page at example dot com")).toBe(
+      "message this page at example dot com",
+    );
     expect(filter.censor("forward shopping at example dot com")).toBe(
       "forward shopping at example dot com",
     );
     expect(filter.censor("forward to shop at example dot com")).toBe(
       "forward to shop at example dot com",
+    );
+    expect(filter.censor("reach shopping at example dot com")).toBe(
+      "reach shopping at example dot com",
+    );
+    expect(filter.censor("reach work at example dot com")).toBe(
+      "reach work at example dot com",
     );
     expect(filter.censor("the email to page at example dot com")).toBe(
       "the email to page at example dot com",
@@ -346,6 +379,12 @@ describe("@textfilters/email", () => {
     );
     expect(filter.censor("Their page at example dot com moved")).toBe(
       "Their page at example dot com moved",
+    );
+    expect(filter.censor("Our work at example dot com is showcased")).toBe(
+      "Our work at example dot com is showcased",
+    );
+    expect(filter.censor("Their study at example dot com was cited")).toBe(
+      "Their study at example dot com was cited",
     );
     expect(
       filter.censor("corporate email service at example dot com is down"),

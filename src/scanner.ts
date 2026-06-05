@@ -57,6 +57,7 @@ const DIRECT_EMAIL_INTRODUCER_WORDS = new Set([
   "forward",
   "mail",
   "message",
+  "reach",
 ]);
 const PREPOSITIONAL_EMAIL_INTRODUCER_WORDS = new Set([
   "e-mail",
@@ -223,6 +224,15 @@ const isContactResourcePhrase = (
   isRecipientObject(object) &&
   PROSE_OBJECT_LOCAL_WORDS.has(local.value);
 
+const isDeterminerLedEmailObjectPhrase = (
+  introducer: Token | undefined,
+  determiner: Token | undefined,
+  local: Token,
+): boolean =>
+  isDirectEmailIntroducer(introducer) &&
+  isDeterminer(determiner) &&
+  !isKnownProseLocal(local);
+
 const hasCommandContextBeforeEmailTo = (
   previous: Token | undefined,
   previousPrevious: Token | undefined,
@@ -348,7 +358,10 @@ const hasEmailIntroducerContext = (
   if (isEmailIntroducer(previous)) {
     return (
       ((isDirectEmailIntroducer(previous) &&
-        !(previous.value === "forward" && isForwardProseLocal(local))) ||
+        !(
+          (previous.value === "forward" || previous.value === "reach") &&
+          isForwardProseLocal(local)
+        )) ||
         (hasWrappedDomainSeparator &&
           !PROSE_OBJECT_LOCAL_WORDS.has(local.value))) &&
       !isAdjectivalEmailIntroducer(previous, beforePrevious, local)
@@ -370,6 +383,9 @@ const hasEmailIntroducerContext = (
   ) {
     return true;
   }
+  if (isDeterminerLedEmailObjectPhrase(beforePrevious, previous, local)) {
+    return true;
+  }
 
   if (
     isCopulaIntroducer(previous) &&
@@ -389,8 +405,7 @@ const hasEmailIntroducerContext = (
 
   if (
     isPossessiveIntroducer(previous) &&
-    ((beforePrevious === undefined &&
-      !PROSE_OBJECT_LOCAL_WORDS.has(local.value)) ||
+    ((beforePrevious === undefined && !isKnownProseLocal(local)) ||
       isEmailIntroducer(beforePrevious) ||
       hasPrepositionalEmailIntroducerContext(meta, tokens, index - 2, local))
   ) {
