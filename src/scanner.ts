@@ -49,6 +49,13 @@ const EMAIL_INTRODUCER_WORDS = new Set([
   "try",
   "write",
 ]);
+const DIRECT_EMAIL_INTRODUCER_WORDS = new Set([
+  "contact",
+  "e-mail",
+  "email",
+  "mail",
+  "message",
+]);
 const POSSESSIVE_INTRODUCER_WORDS = new Set([
   "her",
   "his",
@@ -58,9 +65,11 @@ const POSSESSIVE_INTRODUCER_WORDS = new Set([
   "your",
 ]);
 const PREPOSITIONAL_INTRODUCER_WORDS = new Set(["to"]);
+const PHRASAL_PARTICLE_WORDS = new Set(["out"]);
 const COPULA_INTRODUCER_WORDS = new Set(["is"]);
 const ADDRESS_NOUN_WORDS = new Set(["address"]);
 const DIRECT_OBJECT_WORDS = new Set(["it", "me", "that", "this", "us"]);
+const COPULA_PROSE_LOCAL_WORDS = new Set(["down", "hosted"]);
 const DETERMINER_WORDS = new Set([
   "a",
   "an",
@@ -118,6 +127,10 @@ const isValidLocal = (value: string): boolean => {
 const isEmailIntroducer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && EMAIL_INTRODUCER_WORDS.has(token.value);
 
+const isDirectEmailIntroducer = (token: Token | undefined): boolean =>
+  token?.type === TOKEN_TYPE.word &&
+  DIRECT_EMAIL_INTRODUCER_WORDS.has(token.value);
+
 const isPossessiveIntroducer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word &&
   POSSESSIVE_INTRODUCER_WORDS.has(token.value);
@@ -125,6 +138,9 @@ const isPossessiveIntroducer = (token: Token | undefined): boolean =>
 const isPrepositionalIntroducer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word &&
   PREPOSITIONAL_INTRODUCER_WORDS.has(token.value);
+
+const isPhrasalParticle = (token: Token | undefined): boolean =>
+  token?.type === TOKEN_TYPE.word && PHRASAL_PARTICLE_WORDS.has(token.value);
 
 const isCopulaIntroducer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && COPULA_INTRODUCER_WORDS.has(token.value);
@@ -180,13 +196,18 @@ const hasEmailIntroducerContext = (
   meta: EmailTextMeta,
   tokens: readonly Token[],
   index: number,
+  local: Token,
+  hasWrappedDomainSeparator: boolean,
 ): boolean => {
   const previous = previousWordInSamePhrase(meta, tokens, index);
   if (previous === undefined) return true;
 
   const beforePrevious = previousWordInSamePhrase(meta, tokens, index - 1);
   if (isEmailIntroducer(previous)) {
-    return !isAdjectivalEmailIntroducer(previous, beforePrevious);
+    return (
+      (isDirectEmailIntroducer(previous) || hasWrappedDomainSeparator) &&
+      !isAdjectivalEmailIntroducer(previous, beforePrevious)
+    );
   }
 
   if (
@@ -208,11 +229,22 @@ const hasEmailIntroducerContext = (
   ) {
     return true;
   }
+  if (
+    isPrepositionalIntroducer(previous) &&
+    isPhrasalParticle(beforePrevious) &&
+    isEmailIntroducer(beforeBeforePrevious)
+  ) {
+    return true;
+  }
   if (isDirectObject(previous) && isEmailIntroducer(beforePrevious)) {
     return true;
   }
 
-  if (isCopulaIntroducer(previous) && isEmailIntroducer(beforePrevious)) {
+  if (
+    isCopulaIntroducer(previous) &&
+    isEmailIntroducer(beforePrevious) &&
+    !COPULA_PROSE_LOCAL_WORDS.has(local.value)
+  ) {
     return true;
   }
   if (
@@ -251,11 +283,18 @@ const isProseBareAtPhrase = (
   index: number,
   local: Token,
   at: Token,
+  hasWrappedDomainSeparator: boolean,
 ): boolean =>
   (at.value === "at" || at.value === "@") &&
   !at.wrapped &&
   (isSentenceInitialProseBareAtPhrase(meta, tokens, index, local) ||
-    !hasEmailIntroducerContext(meta, tokens, index));
+    !hasEmailIntroducerContext(
+      meta,
+      tokens,
+      index,
+      local,
+      hasWrappedDomainSeparator,
+    ));
 
 const isValidDomain = (
   labels: readonly string[],
@@ -451,6 +490,7 @@ const collectObfuscatedRanges = (
     if (!isValidLocal(local.value)) continue;
 
     const labels: string[] = [];
+    let hasWrappedDomainSeparator = false;
     let cursor = i + 2;
     if (tokens[cursor]?.type !== TOKEN_TYPE.word) continue;
     labels.push(tokens[cursor].value);
@@ -460,12 +500,15 @@ const collectObfuscatedRanges = (
       tokens[cursor]?.type === TOKEN_TYPE.dot &&
       tokens[cursor + 1]?.type === TOKEN_TYPE.word
     ) {
+      hasWrappedDomainSeparator ||= tokens[cursor].wrapped;
       labels.push(tokens[cursor + 1].value);
       cursor += 2;
     }
 
     if (!isValidDomain(labels, options)) continue;
-    if (isProseBareAtPhrase(meta, tokens, i, local, at)) {
+    if (
+      isProseBareAtPhrase(meta, tokens, i, local, at, hasWrappedDomainSeparator)
+    ) {
       continue;
     }
     const endToken = tokens[cursor - 1];
