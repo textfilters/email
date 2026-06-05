@@ -96,9 +96,19 @@ const POSSESSIVE_INTRODUCER_WORDS = new Set([
   "your",
 ]);
 const PREPOSITIONAL_INTRODUCER_WORDS = new Set(["to", "via"]);
-const PHRASAL_PARTICLE_WORDS = new Set(["back", "out"]);
+const PHRASAL_PARTICLE_WORDS = new Set(["all", "back", "out"]);
 const COPULA_INTRODUCER_WORDS = new Set(["is", "was"]);
 const ADDRESS_NOUN_WORDS = new Set(["address"]);
+const EMAIL_LABEL_WORDS = new Set([
+  "bcc",
+  "cc",
+  "contact",
+  "e-mail",
+  "email",
+  "mail",
+  "message",
+  "reply-to",
+]);
 const LABEL_SEPARATOR_WORDS = new Set([":", "-"]);
 const ADDRESS_LIST_CONJUNCTION_WORDS = new Set(["and", "or"]);
 const SENDABLE_OBJECT_WORDS = new Set(["it", "that", "this"]);
@@ -227,6 +237,9 @@ const isCopulaIntroducer = (token: Token | undefined): boolean =>
 const isAddressNoun = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && ADDRESS_NOUN_WORDS.has(token.value);
 
+const isEmailLabelWord = (token: Token | undefined): boolean =>
+  token?.type === TOKEN_TYPE.word && EMAIL_LABEL_WORDS.has(token.value);
+
 const isAddressListConjunction = (token: Token | undefined): token is Token =>
   token?.type === TOKEN_TYPE.word &&
   ADDRESS_LIST_CONJUNCTION_WORDS.has(token.value);
@@ -339,6 +352,20 @@ const isSameProsePhrase = (
   return true;
 };
 
+const isAddressListGap = (
+  meta: EmailTextMeta,
+  previous: Token,
+  next: Token,
+): boolean => {
+  for (let i = previous.end; i < next.start; i++) {
+    if (meta.zeroWidth[i]) continue;
+    const value = meta.normalized[i];
+    if (value === "," || isHorizontalWhitespace(value)) continue;
+    return false;
+  }
+  return true;
+};
+
 const previousWordInSamePhrase = (
   meta: EmailTextMeta,
   tokens: readonly Token[],
@@ -378,28 +405,58 @@ const isEmailLabel = (
   label: Token | undefined,
   beforeLabel: Token | undefined,
 ): boolean =>
-  isEmailIntroducer(label) ||
+  isEmailLabelWord(label) ||
+  (label?.type === TOKEN_TYPE.word &&
+    label.value === "to" &&
+    (beforeLabel === undefined ||
+      (beforeLabel.type === TOKEN_TYPE.word &&
+        beforeLabel.value === "reply"))) ||
   (isAddressNoun(label) &&
-    (beforeLabel === undefined || isEmailIntroducer(beforeLabel))) ||
-  (isRecipientObject(label) && isEmailIntroducer(beforeLabel));
+    (beforeLabel === undefined || isEmailLabelWord(beforeLabel))) ||
+  (isRecipientObject(label) && isEmailLabelWord(beforeLabel));
+
+const labelIndexBeforeSeparator = (
+  meta: EmailTextMeta,
+  tokens: readonly Token[],
+  index: number,
+): number | undefined => {
+  const local = tokens[index];
+  let labelIndex = index - 1;
+  while (isLabelSeparatorToken(tokens[labelIndex])) labelIndex -= 1;
+
+  const label = tokens[labelIndex];
+  if (local === undefined || label?.type !== TOKEN_TYPE.word) return undefined;
+  if (!hasLabelSeparator(meta, label.end, local.start)) return undefined;
+
+  return labelIndex;
+};
 
 const hasEmailLabelContext = (
   meta: EmailTextMeta,
   tokens: readonly Token[],
   index: number,
 ): boolean => {
-  const local = tokens[index];
-  let labelIndex = index - 1;
-  while (isLabelSeparatorToken(tokens[labelIndex])) labelIndex -= 1;
+  const labelIndex = labelIndexBeforeSeparator(meta, tokens, index);
+  if (labelIndex === undefined) return false;
+  const label = tokens[labelIndex];
+  const beforeLabel = previousWordInSamePhrase(meta, tokens, labelIndex);
+  return isEmailLabel(label, beforeLabel);
+};
+
+const hasNonEmailProseLabelContext = (
+  meta: EmailTextMeta,
+  tokens: readonly Token[],
+  index: number,
+  local: Token,
+): boolean => {
+  if (!isKnownProseLocal(local)) return false;
+
+  const labelIndex = labelIndexBeforeSeparator(meta, tokens, index);
+  if (labelIndex === undefined) return false;
 
   const label = tokens[labelIndex];
-  if (local === undefined || label?.type !== TOKEN_TYPE.word) return false;
-
   const beforeLabel = previousWordInSamePhrase(meta, tokens, labelIndex);
-  return (
-    isEmailLabel(label, beforeLabel) &&
-    hasLabelSeparator(meta, label.end, local.start)
-  );
+  return !isEmailLabel(label, beforeLabel);
 };
 
 const isDefaultMultiLabelDomain = (labels: readonly string[]): boolean =>
@@ -460,7 +517,7 @@ const previousAddressListLocalIndex = (
   const priorEnd = tokens[priorEndIndex];
   if (
     priorEnd === undefined ||
-    !isSameProsePhrase(meta, priorEnd, conjunction)
+    !isAddressListGap(meta, priorEnd, conjunction)
   ) {
     return undefined;
   }
@@ -531,7 +588,10 @@ const hasPrepositionalEmailIntroducerContext = (
     );
   }
   if (isSendableObject(beforePreposition)) {
-    return isPrepositionalEmailIntroducer(beforeBeforePreposition);
+    return (
+      isPrepositionalEmailIntroducer(beforeBeforePreposition) &&
+      !isKnownProseLocal(local)
+    );
   }
   if (
     hasPrepositionalNounObjectContext(
@@ -663,6 +723,7 @@ const isProseBareAtPhrase = (
   (at.value === "at" || at.value === "@") &&
   !at.wrapped &&
   (isSentenceInitialProseBareAtPhrase(meta, tokens, index, local) ||
+    hasNonEmailProseLabelContext(meta, tokens, index, local) ||
     !hasEmailIntroducerContext(meta, tokens, index, local));
 
 const isValidDomain = (
