@@ -69,6 +69,7 @@ const PHRASAL_PARTICLE_WORDS = new Set(["out"]);
 const COPULA_INTRODUCER_WORDS = new Set(["is"]);
 const ADDRESS_NOUN_WORDS = new Set(["address"]);
 const DIRECT_OBJECT_WORDS = new Set(["it", "me", "that", "this", "us"]);
+const RECIPIENT_OBJECT_WORDS = new Set(["me", "us"]);
 const COPULA_PROSE_LOCAL_WORDS = new Set(["down", "hosted"]);
 const DETERMINER_WORDS = new Set([
   "a",
@@ -89,6 +90,13 @@ const ADJECTIVE_INTRODUCER_WORDS = new Set([
   "email",
   "mail",
   "message",
+]);
+const PROSE_OBJECT_LOCAL_WORDS = new Set([
+  "code",
+  "form",
+  "page",
+  "service",
+  "shopping",
 ]);
 const SENTENCE_INITIAL_PROSE_LOCAL_WORDS = new Set([
   "apply",
@@ -157,14 +165,19 @@ const isAddressNoun = (token: Token | undefined): boolean =>
 const isDirectObject = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && DIRECT_OBJECT_WORDS.has(token.value);
 
+const isRecipientObject = (token: Token | undefined): boolean =>
+  token?.type === TOKEN_TYPE.word && RECIPIENT_OBJECT_WORDS.has(token.value);
+
 const isDeterminer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && DETERMINER_WORDS.has(token.value);
 
 const isAdjectivalEmailIntroducer = (
   token: Token,
   previous: Token | undefined,
+  local: Token,
 ): boolean =>
-  ADJECTIVE_INTRODUCER_WORDS.has(token.value) && isDeterminer(previous);
+  ADJECTIVE_INTRODUCER_WORDS.has(token.value) &&
+  (isDeterminer(previous) || PROSE_OBJECT_LOCAL_WORDS.has(local.value));
 
 const isHorizontalWhitespace = (value: string): boolean =>
   value !== "\n" && value !== "\r" && isWhitespace(value);
@@ -234,8 +247,10 @@ const hasEmailIntroducerContext = (
   const beforePrevious = previousWordInSamePhrase(meta, tokens, index - 1);
   if (isEmailIntroducer(previous)) {
     return (
-      (isDirectEmailIntroducer(previous) || hasWrappedDomainSeparator) &&
-      !isAdjectivalEmailIntroducer(previous, beforePrevious)
+      (isDirectEmailIntroducer(previous) ||
+        (hasWrappedDomainSeparator &&
+          !PROSE_OBJECT_LOCAL_WORDS.has(local.value))) &&
+      !isAdjectivalEmailIntroducer(previous, beforePrevious, local)
     );
   }
 
@@ -247,7 +262,7 @@ const hasEmailIntroducerContext = (
   if (hasPrepositionalEmailIntroducerContext(meta, tokens, index - 1)) {
     return true;
   }
-  if (isDirectObject(previous) && isEmailIntroducer(beforePrevious)) {
+  if (isRecipientObject(previous) && isEmailIntroducer(beforePrevious)) {
     return true;
   }
 

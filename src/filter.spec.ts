@@ -254,8 +254,26 @@ describe("@textfilters/email", () => {
     expect(filter.censor("try shopping at example dot com")).toBe(
       "try shopping at example dot com",
     );
+    expect(filter.censor("try shopping at example [dot] com")).toBe(
+      "try shopping at example [dot] com",
+    );
     expect(filter.censor("write code at example dot com")).toBe(
       "write code at example dot com",
+    );
+    expect(filter.censor("write code at example [dot] com")).toBe(
+      "write code at example [dot] com",
+    );
+    expect(filter.censor("send this form at example dot com")).toBe(
+      "send this form at example dot com",
+    );
+    expect(filter.censor("send that page at example dot com")).toBe(
+      "send that page at example dot com",
+    );
+    expect(
+      filter.censor("corporate email service at example dot com is down"),
+    ).toBe("corporate email service at example dot com is down");
+    expect(filter.censor("website contact form at example dot com")).toBe(
+      "website contact form at example dot com",
     );
     expect(filter.censor("my email is hosted at example dot com")).toBe(
       "my email is hosted at example dot com",
