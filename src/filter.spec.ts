@@ -195,6 +195,12 @@ describe("@textfilters/email", () => {
     expect(filter.censor("reach service at example dot com")).toBe(
       "reach **************************",
     );
+    expect(filter.censor("try user at example dot com")).toBe(
+      "try ***********************",
+    );
+    expect(filter.censor("write admin at example dot com")).toBe(
+      "write ************************",
+    );
   });
 
   it("masks obfuscated email addresses introduced through copula wording", () => {
@@ -350,6 +356,12 @@ describe("@textfilters/email", () => {
     expect(filter.censor("try shopping at example [dot] com")).toBe(
       "try shopping at example [dot] com",
     );
+    expect(filter.censor("try work at example dot com")).toBe(
+      "try work at example dot com",
+    );
+    expect(filter.censor("try work at example [dot] com")).toBe(
+      "try work at example [dot] com",
+    );
     expect(filter.censor("try to shop at example dot com")).toBe(
       "try to shop at example dot com",
     );
@@ -367,6 +379,12 @@ describe("@textfilters/email", () => {
     );
     expect(filter.censor("write code at example [dot] com")).toBe(
       "write code at example [dot] com",
+    );
+    expect(filter.censor("write work at example dot com")).toBe(
+      "write work at example dot com",
+    );
+    expect(filter.censor("write work at example [dot] com")).toBe(
+      "write work at example [dot] com",
     );
     expect(filter.censor("send this form at example dot com")).toBe(
       "send this form at example dot com",

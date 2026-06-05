@@ -349,7 +349,6 @@ const hasEmailIntroducerContext = (
   tokens: readonly Token[],
   index: number,
   local: Token,
-  hasWrappedDomainSeparator: boolean,
 ): boolean => {
   const previous = previousWordInSamePhrase(meta, tokens, index);
   if (previous === undefined) return true;
@@ -357,13 +356,12 @@ const hasEmailIntroducerContext = (
   const beforePrevious = previousWordInSamePhrase(meta, tokens, index - 1);
   if (isEmailIntroducer(previous)) {
     return (
-      ((isDirectEmailIntroducer(previous) &&
-        !(
-          (previous.value === "forward" || previous.value === "reach") &&
-          isForwardProseLocal(local)
-        )) ||
-        (hasWrappedDomainSeparator &&
-          !PROSE_OBJECT_LOCAL_WORDS.has(local.value))) &&
+      (isDirectEmailIntroducer(previous)
+        ? !(
+            (previous.value === "forward" || previous.value === "reach") &&
+            isForwardProseLocal(local)
+          )
+        : !isKnownProseLocal(local)) &&
       !isAdjectivalEmailIntroducer(previous, beforePrevious, local)
     );
   }
@@ -430,18 +428,11 @@ const isProseBareAtPhrase = (
   index: number,
   local: Token,
   at: Token,
-  hasWrappedDomainSeparator: boolean,
 ): boolean =>
   (at.value === "at" || at.value === "@") &&
   !at.wrapped &&
   (isSentenceInitialProseBareAtPhrase(meta, tokens, index, local) ||
-    !hasEmailIntroducerContext(
-      meta,
-      tokens,
-      index,
-      local,
-      hasWrappedDomainSeparator,
-    ));
+    !hasEmailIntroducerContext(meta, tokens, index, local));
 
 const isValidDomain = (
   labels: readonly string[],
@@ -637,7 +628,6 @@ const collectObfuscatedRanges = (
     if (!isValidLocal(local.value)) continue;
 
     const labels: string[] = [];
-    let hasWrappedDomainSeparator = false;
     let cursor = i + 2;
     if (tokens[cursor]?.type !== TOKEN_TYPE.word) continue;
     labels.push(tokens[cursor].value);
@@ -647,15 +637,12 @@ const collectObfuscatedRanges = (
       tokens[cursor]?.type === TOKEN_TYPE.dot &&
       tokens[cursor + 1]?.type === TOKEN_TYPE.word
     ) {
-      hasWrappedDomainSeparator ||= tokens[cursor].wrapped;
       labels.push(tokens[cursor + 1].value);
       cursor += 2;
     }
 
     if (!isValidDomain(labels, options)) continue;
-    if (
-      isProseBareAtPhrase(meta, tokens, i, local, at, hasWrappedDomainSeparator)
-    ) {
+    if (isProseBareAtPhrase(meta, tokens, i, local, at)) {
       continue;
     }
     const endToken = tokens[cursor - 1];
