@@ -272,6 +272,12 @@ describe("@textfilters/email", () => {
     expect(filter.censor("try to apply at example dot com")).toBe(
       "try to apply at example dot com",
     );
+    expect(filter.censor("send me to shop at example dot com")).toBe(
+      "send me to shop at example dot com",
+    );
+    expect(filter.censor("send us to apply at example dot com")).toBe(
+      "send us to apply at example dot com",
+    );
     expect(filter.censor("write code at example dot com")).toBe(
       "write code at example dot com",
     );

@@ -74,7 +74,7 @@ const PREPOSITIONAL_INTRODUCER_WORDS = new Set(["to"]);
 const PHRASAL_PARTICLE_WORDS = new Set(["out"]);
 const COPULA_INTRODUCER_WORDS = new Set(["is"]);
 const ADDRESS_NOUN_WORDS = new Set(["address"]);
-const DIRECT_OBJECT_WORDS = new Set(["it", "me", "that", "this", "us"]);
+const SENDABLE_OBJECT_WORDS = new Set(["it", "that", "this"]);
 const RECIPIENT_OBJECT_WORDS = new Set(["me", "us"]);
 const COPULA_PROSE_LOCAL_WORDS = new Set(["down", "hosted"]);
 const DETERMINER_WORDS = new Set([
@@ -177,8 +177,8 @@ const isCopulaIntroducer = (token: Token | undefined): boolean =>
 const isAddressNoun = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && ADDRESS_NOUN_WORDS.has(token.value);
 
-const isDirectObject = (token: Token | undefined): boolean =>
-  token?.type === TOKEN_TYPE.word && DIRECT_OBJECT_WORDS.has(token.value);
+const isSendableObject = (token: Token | undefined): boolean =>
+  token?.type === TOKEN_TYPE.word && SENDABLE_OBJECT_WORDS.has(token.value);
 
 const isRecipientObject = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && RECIPIENT_OBJECT_WORDS.has(token.value);
@@ -249,7 +249,7 @@ const hasPrepositionalEmailIntroducerContext = (
     tokens,
     index - 1,
   );
-  if (isDirectObject(beforePreposition)) {
+  if (isSendableObject(beforePreposition)) {
     return isPrepositionalEmailIntroducer(beforeBeforePreposition);
   }
   return (
