@@ -1,12 +1,25 @@
 import { type EmailTextMeta } from "../../normalization.js";
-import { isAddressListGap, isSameProsePhrase } from "./phrase.js";
-import { hasProseLocalContext } from "./prose.js";
 import {
-  isAddressListConjunction,
-  isValidDomain,
-  isValidLocal,
-} from "../rules.js";
-import { TOKEN_TYPE, type ScannerOptions, type Token } from "../core.js";
+  SCANNER_PUNCTUATION,
+  TOKEN_TYPE,
+  type ScannerOptions,
+  type Token,
+} from "../core/types.js";
+import { isAddressListGap, isSameProsePhrase } from "./phrase.js";
+import { isAddressListConjunction } from "../rules/lexicon.js";
+import { isValidDomain, isValidLocal } from "../rules/validators.js";
+
+const hasCommaSeparator = (
+  meta: EmailTextMeta,
+  previous: Token,
+  next: Token,
+): boolean => {
+  for (let i = previous.end; i < next.start; i++) {
+    if (meta.zeroWidth[i]) continue;
+    if (meta.normalized[i] === SCANNER_PUNCTUATION.comma) return true;
+  }
+  return false;
+};
 
 const previousObfuscatedAddressLocalIndex = (
   tokens: readonly Token[],
@@ -51,20 +64,26 @@ export const previousAddressListLocalIndex = (
   index: number,
   local: Token,
   options: ScannerOptions,
+  acceptedListLocalIndexes: ReadonlySet<number>,
 ): number | undefined => {
-  const conjunctionIndex = index - 1;
-  const conjunction = tokens[conjunctionIndex];
-  if (!isAddressListConjunction(conjunction)) return undefined;
-  if (!isSameProsePhrase(meta, conjunction, local)) return undefined;
-
-  const priorEndIndex = conjunctionIndex - 1;
-  const priorEnd = tokens[priorEndIndex];
-  if (
-    priorEnd === undefined ||
-    !isAddressListGap(meta, priorEnd, conjunction)
-  ) {
+  const previousIndex = index - 1;
+  const previous = tokens[previousIndex];
+  const hasConjunction = isAddressListConjunction(previous);
+  if (hasConjunction && !isSameProsePhrase(meta, previous, local)) {
     return undefined;
   }
+
+  const priorEndIndex = hasConjunction ? previousIndex - 1 : previousIndex;
+  const priorEnd = tokens[priorEndIndex];
+  if (priorEnd === undefined) {
+    return undefined;
+  }
+
+  const hasListSeparator = hasConjunction
+    ? isAddressListGap(meta, priorEnd, previous)
+    : isAddressListGap(meta, priorEnd, local) &&
+      hasCommaSeparator(meta, priorEnd, local);
+  if (!hasListSeparator) return undefined;
 
   const priorLocalIndex = previousObfuscatedAddressLocalIndex(
     tokens,
@@ -72,14 +91,24 @@ export const previousAddressListLocalIndex = (
     options,
   );
   if (priorLocalIndex === undefined) return undefined;
-
-  const priorLocal = tokens[priorLocalIndex];
-  if (
-    priorLocal !== undefined &&
-    hasProseLocalContext(meta, tokens, priorLocalIndex, priorLocal)
-  ) {
-    return undefined;
-  }
+  if (!acceptedListLocalIndexes.has(priorLocalIndex)) return undefined;
 
   return priorLocalIndex;
 };
+
+export const hasAcceptedAddressListContext = (
+  meta: EmailTextMeta,
+  tokens: readonly Token[],
+  index: number,
+  local: Token,
+  options: ScannerOptions,
+  acceptedListLocalIndexes: ReadonlySet<number>,
+): boolean =>
+  previousAddressListLocalIndex(
+    meta,
+    tokens,
+    index,
+    local,
+    options,
+    acceptedListLocalIndexes,
+  ) !== undefined;

@@ -15,6 +15,16 @@ describe("@textfilters/email options and integration", () => {
     ).toBe("################");
   });
 
+  it("keeps output length stable for normal mask characters", () => {
+    const source = "contact user@example.com and admin at example dot com";
+    const output = createEmailFilter({ maskChar: "#" }).censor(source);
+
+    expect(output).toHaveLength(source.length);
+    expect(output).toBe(
+      "contact ################ and ########################",
+    );
+  });
+
   it("can disable obfuscated email matching", () => {
     const emailOnlyFilter = createEmailFilter({ matchObfuscated: false });
 
@@ -79,6 +89,19 @@ describe("@textfilters/email options and integration", () => {
         "mail user at example dot com and admin at example dot com",
       ),
     ).toBe("mail user at example dot com and ************************");
+  });
+
+  it("applies full-address exclusions consistently to direct and obfuscated candidates", () => {
+    const configured = createEmailFilter({
+      excludeEmails: ["user@example.com"],
+    });
+
+    expect(configured.censor("mail user@example.com")).toBe(
+      "mail user@example.com",
+    );
+    expect(configured.censor("mail user at example dot com")).toBe(
+      "mail user at example dot com",
+    );
   });
 
   it("excludes configured usernames from masking", () => {

@@ -251,6 +251,7 @@ describe("@textfilters/email introduced contexts", () => {
     const admin = "admin at example dot com";
     const work = "work at example dot com";
     const apply = "apply at example dot com";
+    const service = "service at example dot com";
 
     expect(filter.censor(`email ${user} and ${admin}`)).toBe(
       `email ${"*".repeat(user.length)} and ${"*".repeat(admin.length)}`,
@@ -258,11 +259,30 @@ describe("@textfilters/email introduced contexts", () => {
     expect(filter.censor(`email ${user}, and ${admin}`)).toBe(
       `email ${"*".repeat(user.length)}, and ${"*".repeat(admin.length)}`,
     );
+    expect(filter.censor(`email ${user}, ${work}`)).toBe(
+      `email ${"*".repeat(user.length)}, ${"*".repeat(work.length)}`,
+    );
     expect(filter.censor(`contact ${user} or ${admin}`)).toBe(
       `contact ${"*".repeat(user.length)} or ${"*".repeat(admin.length)}`,
     );
     expect(filter.censor(`Email: ${work} and ${apply}`)).toBe(
       `Email: ${"*".repeat(work.length)} and ${"*".repeat(apply.length)}`,
     );
+    expect(filter.censor(`Email: ${work}, ${apply}, ${service}`)).toBe(
+      `Email: ${"*".repeat(work.length)}, ${"*".repeat(apply.length)}, ${"*".repeat(service.length)}`,
+    );
+  });
+
+  it("masks long introduced lists without recursive context revalidation", () => {
+    const addresses = Array.from(
+      { length: 64 },
+      (_, index) => `user${index} at example dot com`,
+    );
+    const source = `email ${addresses.join(" and ")}`;
+    const expected = `email ${addresses
+      .map((address) => "*".repeat(address.length))
+      .join(" and ")}`;
+
+    expect(filter.censor(source)).toBe(expected);
   });
 });

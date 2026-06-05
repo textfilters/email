@@ -1,7 +1,8 @@
 import { type EmailTextMeta } from "../../normalization.js";
-import { previousAddressListLocalIndex } from "./address-list.js";
+import { hasAcceptedAddressListContext } from "./address-list.js";
 import { hasEmailLabelContext } from "./labels.js";
 import { previousWordInSamePhrase } from "./phrase.js";
+import { TOKEN_TYPE, type ScannerOptions, type Token } from "../core/types.js";
 import {
   COPULA_PROSE_LOCAL_WORDS,
   SCANNER_WORD,
@@ -22,8 +23,7 @@ import {
   isPrepositionalIntroducer,
   isRecipientObject,
   isSendableObject,
-} from "../rules.js";
-import { TOKEN_TYPE, type ScannerOptions, type Token } from "../core.js";
+} from "../rules/lexicon.js";
 
 const isContactResourcePhrase = (
   introducer: Token | undefined,
@@ -180,33 +180,21 @@ export const hasEmailIntroducerContext = (
   index: number,
   local: Token,
   options: ScannerOptions,
+  acceptedListLocalIndexes: ReadonlySet<number>,
 ): boolean => {
   if (hasEmailLabelContext(meta, tokens, index)) return true;
 
-  // Address-list context is inherited only from a previous item that would
-  // itself be accepted as an introduced address. This prevents prose resource
-  // lists like "Note: service at ... and page at ..." from leaking context.
-  const priorListLocalIndex = previousAddressListLocalIndex(
-    meta,
-    tokens,
-    index,
-    local,
-    options,
-  );
-  if (priorListLocalIndex !== undefined) {
-    const priorListLocal = tokens[priorListLocalIndex];
-    if (
-      priorListLocal !== undefined &&
-      hasEmailIntroducerContext(
-        meta,
-        tokens,
-        priorListLocalIndex,
-        priorListLocal,
-        options,
-      )
-    ) {
-      return true;
-    }
+  if (
+    hasAcceptedAddressListContext(
+      meta,
+      tokens,
+      index,
+      local,
+      options,
+      acceptedListLocalIndexes,
+    )
+  ) {
+    return true;
   }
 
   const previous = previousWordInSamePhrase(meta, tokens, index);

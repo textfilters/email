@@ -4,12 +4,10 @@ import {
 } from "@textfilters/core";
 
 import { createEmailTextMeta } from "./normalization.js";
-import {
-  collectDirectEmailRange,
-  collectObfuscatedEmailRanges,
-} from "./scanner/matching.js";
-import { createExclusionSets } from "./scanner/rules.js";
-import { TOKEN_VALUE, type ScannerOptions } from "./scanner/core.js";
+import { collectDirectEmailRange } from "./scanner/matching/direct.js";
+import { collectObfuscatedEmailRanges } from "./scanner/matching/obfuscated.js";
+import { createExclusionSets } from "./scanner/rules/exclusions.js";
+import { TOKEN_VALUE, type ScannerOptions } from "./scanner/core/types.js";
 import { type EmailFilterOptions } from "./types.js";
 
 export function collectEmailRanges(
