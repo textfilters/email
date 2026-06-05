@@ -8,15 +8,9 @@ import {
   SCANNER_PUNCTUATION,
   TOKEN_VALUE,
   type ScannerOptions,
-} from "../core.js";
-import {
-  hasBoundary,
-  isExcludedAddress,
-  isLocalChar,
-  isValidDomain,
-  isValidLocal,
-} from "../rules.js";
-import { nextContent, previousContent } from "./boundary.js";
+} from "../core/types.js";
+import { isLocalChar } from "../rules/validators.js";
+import { collectCandidateRange } from "./candidate.js";
 
 export const collectDirectEmailRange = (
   meta: EmailTextMeta,
@@ -50,10 +44,15 @@ export const collectDirectEmailRange = (
   const domain = meta.normalized.slice(atIndex + 1, domainEnd).join("");
   const labels = domain.split(TOKEN_VALUE.dotSymbol);
 
-  if (!isValidLocal(local) || !isValidDomain(labels, options)) return null;
-  if (isExcludedAddress(local, labels, options)) return null;
-  if (!hasBoundary(previousContent(meta, localStart - 1))) return null;
-  if (!hasBoundary(nextContent(meta, domainEnd))) return null;
-
-  return [localStart, domainEnd];
+  return collectCandidateRange(
+    meta,
+    {
+      kind: "direct",
+      local,
+      labels,
+      start: localStart,
+      end: domainEnd,
+    },
+    options,
+  );
 };

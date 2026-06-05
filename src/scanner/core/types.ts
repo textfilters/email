@@ -39,3 +39,11 @@ export interface Token {
   readonly end: number;
   readonly wrapped: boolean;
 }
+
+export interface EmailCandidate {
+  readonly kind: "direct" | "obfuscated";
+  readonly local: string;
+  readonly labels: readonly string[];
+  readonly start: number;
+  readonly end: number;
+}

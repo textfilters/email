@@ -3,7 +3,7 @@ import {
   TOKEN_VALUE,
   type ScannerExclusions,
   type ScannerOptions,
-} from "../core.js";
+} from "../core/types.js";
 
 const normalizeExclusionValue = (value: string): string => {
   // Exclusions compare against scanner candidates, so they use the same

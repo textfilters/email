@@ -1,16 +1,11 @@
 import { type TextCodePointRange } from "@textfilters/core";
 
 import { type EmailTextMeta } from "../../normalization.js";
-import { isProseBareAtPhrase } from "../context.js";
-import { TOKEN_TYPE, type ScannerOptions } from "../core.js";
-import {
-  hasBoundary,
-  isExcludedAddress,
-  isValidDomain,
-  isValidLocal,
-} from "../rules.js";
-import { tokenize } from "../tokenization.js";
-import { nextContent, previousContent } from "./boundary.js";
+import { isBareAtProsePhrase } from "../context/bare-at-policy.js";
+import { TOKEN_TYPE, type ScannerOptions } from "../core/types.js";
+import { isValidLocal } from "../rules/validators.js";
+import { tokenize } from "../tokenization/tokenizer.js";
+import { isCandidateExcluded, isCandidateMatchable } from "./candidate.js";
 
 export const collectObfuscatedEmailRanges = (
   meta: EmailTextMeta,
@@ -20,6 +15,7 @@ export const collectObfuscatedEmailRanges = (
   // around "at" are often prose rather than mailbox addresses.
   const tokens = tokenize(meta);
   const ranges: TextCodePointRange[] = [];
+  const acceptedListLocalIndexes = new Set<number>();
 
   for (let i = 0; i < tokens.length - 2; i++) {
     const local = tokens[i];
@@ -42,14 +38,34 @@ export const collectObfuscatedEmailRanges = (
       cursor += 2;
     }
 
-    if (!isValidDomain(labels, options)) continue;
-    if (isExcludedAddress(local.value, labels, options)) continue;
-    if (isProseBareAtPhrase(meta, tokens, i, local, at, options)) continue;
+    if (
+      isBareAtProsePhrase(
+        meta,
+        tokens,
+        i,
+        local,
+        at,
+        options,
+        acceptedListLocalIndexes,
+      )
+    ) {
+      continue;
+    }
 
     const endToken = tokens[cursor - 1];
-    if (!hasBoundary(previousContent(meta, local.start - 1))) continue;
-    if (!hasBoundary(nextContent(meta, endToken.end))) continue;
-    ranges.push([local.start, endToken.end]);
+    const candidate = {
+      kind: "obfuscated",
+      local: local.value,
+      labels,
+      start: local.start,
+      end: endToken.end,
+    } as const;
+    if (!isCandidateMatchable(meta, candidate, options)) continue;
+
+    acceptedListLocalIndexes.add(i);
+    if (!isCandidateExcluded(candidate, options)) {
+      ranges.push([candidate.start, candidate.end]);
+    }
     i = cursor - 1;
   }
 

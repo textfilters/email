@@ -2,327 +2,157 @@ import { describe, expect, it } from "vitest";
 
 import { filter } from "../src/index.js";
 
-describe("@textfilters/email prose guards", () => {
-  it("does not mask package scopes", () => {
-    expect(filter.censor("install @textfilters/core")).toBe(
-      "install @textfilters/core",
-    );
-  });
+interface GuardGroup {
+  readonly name: string;
+  readonly cases: readonly string[];
+}
 
-  it("does not mask social handles", () => {
-    expect(filter.censor("message @username")).toBe("message @username");
-  });
-
-  it("does not mask prose without a plausible local part", () => {
-    expect(filter.censor("meet me at example dot com")).toBe(
+const unchangedGuardGroups: readonly GuardGroup[] = [
+  {
+    name: "package/social guards",
+    cases: ["install @textfilters/core", "message @username"],
+  },
+  {
+    name: "URL-like prose",
+    cases: [
       "meet me at example dot com",
-    );
-  });
-
-  it("does not mask URL-like text after a normal word", () => {
-    expect(filter.censor("и ещё www (.) example dot com")).toBe(
       "и ещё www (.) example dot com",
-    );
-    expect(filter.censor("go www dot example dot com")).toBe(
       "go www dot example dot com",
-    );
-    expect(filter.censor("we are at www dot example dot com")).toBe(
       "we are at www dot example dot com",
-    );
-    expect(filter.censor("we are at example dot com")).toBe(
       "we are at example dot com",
-    );
-    expect(filter.censor("we live at example dot com")).toBe(
       "we live at example dot com",
-    );
-    expect(filter.censor("we work at www dot example dot com")).toBe(
       "we work at www dot example dot com",
-    );
-    expect(filter.censor("we work @ example dot com")).toBe(
       "we work @ example dot com",
-    );
-    expect(filter.censor("employees work at example dot com")).toBe(
       "employees work at example dot com",
-    );
-    expect(filter.censor("children study at example dot com")).toBe(
       "children study at example dot com",
-    );
-    expect(filter.censor("Work at example dot com")).toBe(
-      "Work at example dot com",
-    );
-    expect(filter.censor("Study at example dot com")).toBe(
-      "Study at example dot com",
-    );
-    expect(filter.censor("Shop at example dot com")).toBe(
-      "Shop at example dot com",
-    );
-    expect(filter.censor("Apply at example dot com")).toBe(
-      "Apply at example dot com",
-    );
-    expect(filter.censor("the email service at example dot com is down")).toBe(
       "the email service at example dot com is down",
-    );
-    expect(filter.censor("the e-mail service at example dot com")).toBe(
       "the e-mail service at example dot com",
-    );
-    expect(filter.censor("the contact form at example dot com")).toBe(
       "the contact form at example dot com",
-    );
-    expect(filter.censor("the contact us page at example dot com")).toBe(
-      "the contact us page at example dot com",
-    );
-    expect(filter.censor("contact us page at example dot com")).toBe(
-      "contact us page at example dot com",
-    );
-    expect(filter.censor("the contact me form at example dot com")).toBe(
-      "the contact me form at example dot com",
-    );
-    expect(filter.censor("contact the page at example dot com")).toBe(
-      "contact the page at example dot com",
-    );
-    expect(filter.censor("contact the form at example dot com")).toBe(
-      "contact the form at example dot com",
-    );
-    expect(filter.censor("the contact via page at example dot com")).toBe(
-      "the contact via page at example dot com",
-    );
-    expect(filter.censor("corporate contact via form at example dot com")).toBe(
-      "corporate contact via form at example dot com",
-    );
-    expect(filter.censor("please contact via form at example dot com")).toBe(
-      "please contact via form at example dot com",
-    );
-    expect(filter.censor("contact via page at example dot com")).toBe(
-      "contact via page at example dot com",
-    );
-    expect(filter.censor("send via service at example dot com")).toBe(
-      "send via service at example dot com",
-    );
-    expect(filter.censor("message via code at example dot com")).toBe(
-      "message via code at example dot com",
-    );
-    expect(filter.censor("contact via work at example dot com")).toBe(
-      "contact via work at example dot com",
-    );
-    expect(filter.censor("email the service at example dot com")).toBe(
-      "email the service at example dot com",
-    );
-    expect(filter.censor("email this form at example dot com")).toBe(
-      "email this form at example dot com",
-    );
-    expect(filter.censor("message this page at example dot com")).toBe(
-      "message this page at example dot com",
-    );
-    expect(filter.censor("forward shopping at example dot com")).toBe(
-      "forward shopping at example dot com",
-    );
-    expect(filter.censor("forward to shop at example dot com")).toBe(
-      "forward to shop at example dot com",
-    );
-    expect(filter.censor("reach shopping at example dot com")).toBe(
-      "reach shopping at example dot com",
-    );
-    expect(filter.censor("reach work at example dot com")).toBe(
-      "reach work at example dot com",
-    );
-    expect(filter.censor("the email to page at example dot com")).toBe(
-      "the email to page at example dot com",
-    );
-    expect(filter.censor("the message to page at example dot com")).toBe(
-      "the message to page at example dot com",
-    );
-    expect(filter.censor("corporate email to page at example dot com")).toBe(
-      "corporate email to page at example dot com",
-    );
-    expect(filter.censor("website message to page at example dot com")).toBe(
-      "website message to page at example dot com",
-    );
-    expect(filter.censor("I like my job at example dot com")).toBe(
       "I like my job at example dot com",
-    );
-    expect(filter.censor("we saw her work at example dot com")).toBe(
       "we saw her work at example dot com",
-    );
-    expect(filter.censor("Located at example dot com")).toBe(
       "Located at example dot com",
-    );
-    expect(filter.censor("See our site. Located at example dot com")).toBe(
       "See our site. Located at example dot com",
-    );
-    expect(filter.censor("Service at example dot com is down")).toBe(
-      "Service at example dot com is down",
-    );
-    expect(filter.censor("Page at example dot com moved")).toBe(
-      "Page at example dot com moved",
-    );
-    expect(filter.censor("we work at example [dot] com")).toBe(
       "we work at example [dot] com",
-    );
-    expect(filter.censor("try shopping at example dot com")).toBe(
-      "try shopping at example dot com",
-    );
-    expect(filter.censor("try shopping at example [dot] com")).toBe(
-      "try shopping at example [dot] com",
-    );
-    expect(filter.censor("try work at example dot com")).toBe(
-      "try work at example dot com",
-    );
-    expect(filter.censor("try work at example [dot] com")).toBe(
-      "try work at example [dot] com",
-    );
-    expect(filter.censor("Try: work at example dot com")).toBe(
-      "Try: work at example dot com",
-    );
-    expect(filter.censor("Try - work at example dot com")).toBe(
-      "Try - work at example dot com",
-    );
-    expect(filter.censor("Try To: work at example dot com")).toBe(
-      "Try To: work at example dot com",
-    );
-    expect(filter.censor("Write: code at example dot com")).toBe(
-      "Write: code at example dot com",
-    );
-    expect(filter.censor("Write - code at example dot com")).toBe(
-      "Write - code at example dot com",
-    );
-    expect(filter.censor("Note: work at example dot com")).toBe(
-      "Note: work at example dot com",
-    );
-    expect(filter.censor("Note - work at example dot com")).toBe(
-      "Note - work at example dot com",
-    );
-    expect(filter.censor("Note- work at example dot com")).toBe(
-      "Note- work at example dot com",
-    );
-    expect(filter.censor("Note:\nwork at example dot com")).toBe(
-      "Note:\nwork at example dot com",
-    );
-    expect(
-      filter.censor("work at example dot com and admin at example dot com"),
-    ).toBe("work at example dot com and admin at example dot com");
-    expect(
-      filter.censor("we work at example dot com and admin at example dot com"),
-    ).toBe("we work at example dot com and admin at example dot com");
-    expect(
-      filter.censor(
-        "Note: service at example dot com and page at example dot com",
-      ),
-    ).toBe("Note: service at example dot com and page at example dot com");
-    expect(filter.censor("try to shop at example dot com")).toBe(
+    ],
+  },
+  {
+    name: "work/study/shop/apply phrase starts",
+    cases: [
+      "Work at example dot com",
+      "Study at example dot com",
+      "Shop at example dot com",
+      "Apply at example dot com",
       "try to shop at example dot com",
-    );
-    expect(filter.censor("try to apply at example dot com")).toBe(
       "try to apply at example dot com",
-    );
-    expect(filter.censor("send me to shop at example dot com")).toBe(
       "send me to shop at example dot com",
-    );
-    expect(filter.censor("send us to apply at example dot com")).toBe(
       "send us to apply at example dot com",
-    );
-    expect(filter.censor("send the report to work at example dot com")).toBe(
       "send the report to work at example dot com",
-    );
-    expect(filter.censor("send a file to page at example dot com")).toBe(
-      "send a file to page at example dot com",
-    );
-    expect(filter.censor("send it to page at example dot com")).toBe(
-      "send it to page at example dot com",
-    );
-    expect(filter.censor("send this to work at example dot com")).toBe(
-      "send this to work at example dot com",
-    );
-    expect(filter.censor("send that to form at example dot com")).toBe(
-      "send that to form at example dot com",
-    );
-    expect(filter.censor("write code at example dot com")).toBe(
-      "write code at example dot com",
-    );
-    expect(filter.censor("write code at example [dot] com")).toBe(
-      "write code at example [dot] com",
-    );
-    expect(filter.censor("write work at example dot com")).toBe(
       "write work at example dot com",
-    );
-    expect(filter.censor("write work at example [dot] com")).toBe(
       "write work at example [dot] com",
-    );
-    expect(filter.censor("please reply back to work at example dot com")).toBe(
-      "please reply back to work at example dot com",
-    );
-    expect(filter.censor("please reply all to work at example dot com")).toBe(
-      "please reply all to work at example dot com",
-    );
-    expect(filter.censor("respond to work at example dot com")).toBe(
-      "respond to work at example dot com",
-    );
-    expect(filter.censor("respond via service at example dot com")).toBe(
-      "respond via service at example dot com",
-    );
-    expect(
-      filter.censor("please respond back to work at example dot com"),
-    ).toBe("please respond back to work at example dot com");
-    expect(filter.censor("send this form at example dot com")).toBe(
+    ],
+  },
+  {
+    name: "contact/form/page/service resource phrases",
+    cases: [
+      "the contact us page at example dot com",
+      "contact us page at example dot com",
+      "the contact me form at example dot com",
+      "contact the page at example dot com",
+      "contact the form at example dot com",
+      "the contact via page at example dot com",
+      "corporate contact via form at example dot com",
+      "please contact via form at example dot com",
+      "contact via page at example dot com",
+      "send via service at example dot com",
+      "message via code at example dot com",
+      "contact via work at example dot com",
+      "email the service at example dot com",
+      "email this form at example dot com",
+      "message this page at example dot com",
+      "forward shopping at example dot com",
+      "forward to shop at example dot com",
+      "reach shopping at example dot com",
+      "reach work at example dot com",
+      "the email to page at example dot com",
+      "the message to page at example dot com",
+      "corporate email to page at example dot com",
+      "website message to page at example dot com",
+      "Service at example dot com is down",
+      "Page at example dot com moved",
+      "try shopping at example dot com",
+      "try shopping at example [dot] com",
+      "try work at example dot com",
+      "try work at example [dot] com",
+      "send a file to page at example dot com",
+      "send it to page at example dot com",
+      "send this to work at example dot com",
+      "send that to form at example dot com",
       "send this form at example dot com",
-    );
-    expect(filter.censor("send that page at example dot com")).toBe(
       "send that page at example dot com",
-    );
-    expect(filter.censor("Our service at example dot com is down")).toBe(
       "Our service at example dot com is down",
-    );
-    expect(filter.censor("Their page at example dot com moved")).toBe(
       "Their page at example dot com moved",
-    );
-    expect(filter.censor("Our work at example dot com is showcased")).toBe(
       "Our work at example dot com is showcased",
-    );
-    expect(filter.censor("Their study at example dot com was cited")).toBe(
       "Their study at example dot com was cited",
-    );
-    expect(
-      filter.censor("corporate email service at example dot com is down"),
-    ).toBe("corporate email service at example dot com is down");
-    expect(filter.censor("website contact form at example dot com")).toBe(
+      "corporate email service at example dot com is down",
       "website contact form at example dot com",
-    );
-    expect(filter.censor("my email is hosted at example dot com")).toBe(
+    ],
+  },
+  {
+    name: "send/reply/respond prose phrases",
+    cases: [
+      "write code at example dot com",
+      "write code at example [dot] com",
+      "please reply back to work at example dot com",
+      "please reply all to work at example dot com",
+      "respond to work at example dot com",
+      "respond via service at example dot com",
+      "please respond back to work at example dot com",
+    ],
+  },
+  {
+    name: "label contexts",
+    cases: [
+      "Try: work at example dot com",
+      "Try - work at example dot com",
+      "Try To: work at example dot com",
+      "Write: code at example dot com",
+      "Write - code at example dot com",
+      "Note: work at example dot com",
+      "Note - work at example dot com",
+      "Note- work at example dot com",
+      "Note:\nwork at example dot com",
       "my email is hosted at example dot com",
-    );
-    expect(filter.censor("my old email was hosted at example dot com")).toBe(
       "my old email was hosted at example dot com",
-    );
-    expect(filter.censor("my address is hosted at example dot com")).toBe(
       "my address is hosted at example dot com",
-    );
-    expect(filter.censor("our address was located at example dot com")).toBe(
       "our address was located at example dot com",
-    );
-    expect(filter.censor("address is located at example dot com")).toBe(
       "address is located at example dot com",
-    );
-    expect(filter.censor("address is work at example dot com")).toBe(
       "address is work at example dot com",
-    );
-    expect(filter.censor("work address is located at example dot com")).toBe(
       "work address is located at example dot com",
-    );
-    expect(filter.censor("the email is down at example dot com")).toBe(
       "the email is down at example dot com",
-    );
-    expect(filter.censor("the email was down at example dot com")).toBe(
       "the email was down at example dot com",
-    );
-    expect(filter.censor("the address is down at example dot com")).toBe(
       "the address is down at example dot com",
-    );
-    expect(filter.censor("my email address is hosted at example dot com")).toBe(
       "my email address is hosted at example dot com",
-    );
-    expect(filter.censor("the email address is down at example dot com")).toBe(
       "the email address is down at example dot com",
-    );
-  });
+    ],
+  },
+  {
+    name: "address-list contexts",
+    cases: [
+      "work at example dot com and admin at example dot com",
+      "we work at example dot com and admin at example dot com",
+      "Note: service at example dot com and page at example dot com",
+    ],
+  },
+];
+
+describe("@textfilters/email prose guards", () => {
+  for (const group of unchangedGuardGroups) {
+    describe(group.name, () => {
+      it.each(group.cases)("%s", (source) => {
+        expect(filter.censor(source)).toBe(source);
+      });
+    });
+  }
 
   it("does not mask versions, coordinates, or normal text", () => {
     expect(filter.censor("version 1.2.3 near 127.0.0.1 is normal")).toBe(

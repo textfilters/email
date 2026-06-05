@@ -1,4 +1,5 @@
 import { isWhitespace, type EmailTextMeta } from "../../normalization.js";
+import { TOKEN_TYPE, type Token } from "../core/types.js";
 import {
   isAddressNoun,
   isEmailLabelWord,
@@ -7,9 +8,8 @@ import {
   isLabelSeparatorToken,
   isRecipientObject,
   SCANNER_WORD,
-} from "../rules.js";
+} from "../rules/lexicon.js";
 import { previousWordInSamePhrase } from "./phrase.js";
-import { TOKEN_TYPE, type Token } from "../core.js";
 
 interface LabelCandidate {
   readonly index: number;

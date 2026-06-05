@@ -3,8 +3,8 @@ import {
   isWhitespace,
   type EmailTextMeta,
 } from "../../normalization.js";
-import { isWordChar } from "../rules.js";
-import { TOKEN_TYPE, TOKEN_VALUE, type Token } from "../core.js";
+import { TOKEN_TYPE, TOKEN_VALUE, type Token } from "../core/types.js";
+import { isWordChar } from "../rules/validators.js";
 
 const readWrappedSeparator = (
   meta: EmailTextMeta,
