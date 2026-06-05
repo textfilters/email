@@ -36,6 +36,7 @@ describe("@textfilters/email curated regressions", () => {
       "login@sub_domain.com",
       "dev собака site точка com",
       "dev-собака-site-точка-ru",
+      "john.smith at example dot com",
     ];
 
     for (const input of cases) {

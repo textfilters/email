@@ -16,7 +16,10 @@ export const isLocalChar = (value: string): boolean =>
 
 export const isWordChar = (value: string): boolean => WORD_CHAR_RE.test(value);
 
-export const hasBoundary = (value: string): boolean =>
+export const hasLeadingBoundary = (value: string): boolean =>
+  value === "" || !isLocalChar(value);
+
+export const hasTrailingBoundary = (value: string): boolean =>
   value === "" || value === TOKEN_VALUE.dotSymbol || !isLocalChar(value);
 
 export const isValidLocal = (value: string): boolean => {
