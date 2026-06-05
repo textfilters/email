@@ -41,6 +41,7 @@ const EMAIL_INTRODUCER_WORDS = new Set([
   "contact",
   "e-mail",
   "email",
+  "forward",
   "mail",
   "message",
   "reach",
@@ -53,10 +54,16 @@ const DIRECT_EMAIL_INTRODUCER_WORDS = new Set([
   "contact",
   "e-mail",
   "email",
+  "forward",
   "mail",
   "message",
 ]);
 const PREPOSITIONAL_EMAIL_INTRODUCER_WORDS = new Set([
+  "e-mail",
+  "email",
+  "forward",
+  "mail",
+  "message",
   "reply",
   "send",
   "write",
@@ -112,6 +119,16 @@ const SENTENCE_INITIAL_PROSE_LOCAL_WORDS = new Set([
   "study",
   "work",
 ]);
+const FORWARD_PROSE_LOCAL_WORDS = new Set([
+  "apply",
+  "code",
+  "form",
+  "page",
+  "shop",
+  "shopping",
+  "study",
+  "work",
+]);
 
 const isLocalChar = (value: string): boolean => LOCAL_CHAR_RE.test(value);
 
@@ -144,6 +161,13 @@ const isValidLocal = (value: string): boolean => {
   if (value.includes("..")) return false;
   return Array.from(value).every(isLocalChar);
 };
+
+const isKnownProseLocal = (token: Token): boolean =>
+  PROSE_OBJECT_LOCAL_WORDS.has(token.value) ||
+  SENTENCE_INITIAL_PROSE_LOCAL_WORDS.has(token.value);
+
+const isForwardProseLocal = (token: Token): boolean =>
+  FORWARD_PROSE_LOCAL_WORDS.has(token.value);
 
 const isEmailIntroducer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && EMAIL_INTRODUCER_WORDS.has(token.value);
@@ -188,6 +212,46 @@ const isDeterminer = (token: Token | undefined): boolean =>
 
 const isCourtesyCommand = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && COURTESY_COMMAND_WORDS.has(token.value);
+
+const isContactResourcePhrase = (
+  introducer: Token | undefined,
+  object: Token | undefined,
+  local: Token,
+): boolean =>
+  introducer?.type === TOKEN_TYPE.word &&
+  introducer.value === "contact" &&
+  isRecipientObject(object) &&
+  PROSE_OBJECT_LOCAL_WORDS.has(local.value);
+
+const hasCommandContextBeforeEmailTo = (
+  previous: Token | undefined,
+  previousPrevious: Token | undefined,
+): boolean =>
+  previous === undefined ||
+  isCourtesyCommand(previous) ||
+  isPrepositionalEmailIntroducer(previous) ||
+  (isDeterminer(previous) && isPrepositionalEmailIntroducer(previousPrevious));
+
+const isPrepositionalResourcePhrase = (
+  introducer: Token | undefined,
+  previous: Token | undefined,
+  previousPrevious: Token | undefined,
+  local: Token,
+): boolean => {
+  if (!isKnownProseLocal(local)) return false;
+  if (introducer?.type !== TOKEN_TYPE.word) return false;
+  if (introducer.value === "forward") return isForwardProseLocal(local);
+  if (
+    (introducer.value === "e-mail" ||
+      introducer.value === "email" ||
+      introducer.value === "mail" ||
+      introducer.value === "message") &&
+    !hasCommandContextBeforeEmailTo(previous, previousPrevious)
+  ) {
+    return true;
+  }
+  return false;
+};
 
 const isAdjectivalEmailIntroducer = (
   token: Token,
@@ -237,18 +301,30 @@ const hasPrepositionalEmailIntroducerContext = (
   meta: EmailTextMeta,
   tokens: readonly Token[],
   index: number,
+  local: Token,
 ): boolean => {
   const preposition = tokens[index];
   if (!isPrepositionalIntroducer(preposition)) return false;
 
   const beforePreposition = previousWordInSamePhrase(meta, tokens, index);
-  if (isPrepositionalEmailIntroducer(beforePreposition)) return true;
-
   const beforeBeforePreposition = previousWordInSamePhrase(
     meta,
     tokens,
     index - 1,
   );
+  const beforeBeforeBeforePreposition = previousWordInSamePhrase(
+    meta,
+    tokens,
+    index - 2,
+  );
+  if (isPrepositionalEmailIntroducer(beforePreposition)) {
+    return !isPrepositionalResourcePhrase(
+      beforePreposition,
+      beforeBeforePreposition,
+      beforeBeforeBeforePreposition,
+      local,
+    );
+  }
   if (isSendableObject(beforePreposition)) {
     return isPrepositionalEmailIntroducer(beforeBeforePreposition);
   }
@@ -271,7 +347,8 @@ const hasEmailIntroducerContext = (
   const beforePrevious = previousWordInSamePhrase(meta, tokens, index - 1);
   if (isEmailIntroducer(previous)) {
     return (
-      (isDirectEmailIntroducer(previous) ||
+      ((isDirectEmailIntroducer(previous) &&
+        !(previous.value === "forward" && isForwardProseLocal(local))) ||
         (hasWrappedDomainSeparator &&
           !PROSE_OBJECT_LOCAL_WORDS.has(local.value))) &&
       !isAdjectivalEmailIntroducer(previous, beforePrevious, local)
@@ -283,10 +360,14 @@ const hasEmailIntroducerContext = (
     tokens,
     index - 2,
   );
-  if (hasPrepositionalEmailIntroducerContext(meta, tokens, index - 1)) {
+  if (hasPrepositionalEmailIntroducerContext(meta, tokens, index - 1, local)) {
     return true;
   }
-  if (isRecipientObject(previous) && isEmailIntroducer(beforePrevious)) {
+  if (
+    isRecipientObject(previous) &&
+    isEmailIntroducer(beforePrevious) &&
+    !isContactResourcePhrase(beforePrevious, previous, local)
+  ) {
     return true;
   }
 
@@ -311,7 +392,7 @@ const hasEmailIntroducerContext = (
     ((beforePrevious === undefined &&
       !PROSE_OBJECT_LOCAL_WORDS.has(local.value)) ||
       isEmailIntroducer(beforePrevious) ||
-      hasPrepositionalEmailIntroducerContext(meta, tokens, index - 2))
+      hasPrepositionalEmailIntroducerContext(meta, tokens, index - 2, local))
   ) {
     return true;
   }
