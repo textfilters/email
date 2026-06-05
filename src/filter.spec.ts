@@ -129,6 +129,9 @@ describe("@textfilters/email", () => {
     expect(filter.censor("please reach out to user at example dot com")).toBe(
       "please reach out to ***********************",
     );
+    expect(
+      filter.censor("please reach out to our support at example dot com"),
+    ).toBe("please reach out to our **************************");
     expect(filter.censor("send to located at example dot com")).toBe(
       "send to **************************",
     );
@@ -253,6 +256,12 @@ describe("@textfilters/email", () => {
     );
     expect(filter.censor("the email is down at example dot com")).toBe(
       "the email is down at example dot com",
+    );
+    expect(filter.censor("my email address is hosted at example dot com")).toBe(
+      "my email address is hosted at example dot com",
+    );
+    expect(filter.censor("the email address is down at example dot com")).toBe(
+      "the email address is down at example dot com",
     );
   });
 

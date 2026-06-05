@@ -256,17 +256,25 @@ const hasEmailIntroducerContext = (
   if (
     isCopulaIntroducer(previous) &&
     isAddressNoun(beforePrevious) &&
-    isEmailIntroducer(beforeBeforePrevious)
+    isEmailIntroducer(beforeBeforePrevious) &&
+    !COPULA_PROSE_LOCAL_WORDS.has(local.value)
   ) {
     return true;
   }
 
+  const beforeBeforeBeforePrevious = previousWordInSamePhrase(
+    meta,
+    tokens,
+    index - 3,
+  );
   if (
     isPossessiveIntroducer(previous) &&
     (beforePrevious === undefined ||
       isEmailIntroducer(beforePrevious) ||
       (isPrepositionalIntroducer(beforePrevious) &&
-        isEmailIntroducer(beforeBeforePrevious)))
+        (isEmailIntroducer(beforeBeforePrevious) ||
+          (isPhrasalParticle(beforeBeforePrevious) &&
+            isEmailIntroducer(beforeBeforeBeforePrevious)))))
   ) {
     return true;
   }
