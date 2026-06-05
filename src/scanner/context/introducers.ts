@@ -1,4 +1,4 @@
-import { type EmailTextMeta } from "../normalization.js";
+import { type EmailTextMeta } from "../../normalization.js";
 import { previousAddressListLocalIndex } from "./address-list.js";
 import { hasEmailLabelContext } from "./labels.js";
 import { previousWordInSamePhrase } from "./phrase.js";
@@ -22,8 +22,8 @@ import {
   isPrepositionalIntroducer,
   isRecipientObject,
   isSendableObject,
-} from "./rules.js";
-import { TOKEN_TYPE, type Token } from "./types.js";
+} from "../rules/index.js";
+import { TOKEN_TYPE, type Token } from "../core/types.js";
 
 const isContactResourcePhrase = (
   introducer: Token | undefined,

@@ -1,12 +1,12 @@
-import { type EmailTextMeta } from "../normalization.js";
+import { type EmailTextMeta } from "../../normalization.js";
 import { isAddressListGap, isSameProsePhrase } from "./phrase.js";
 import { hasProseLocalContext } from "./prose.js";
 import {
   isAddressListConjunction,
   isValidDomain,
   isValidLocal,
-} from "./rules.js";
-import { TOKEN_TYPE, type ScannerOptions, type Token } from "./types.js";
+} from "../rules/index.js";
+import { TOKEN_TYPE, type ScannerOptions, type Token } from "../core/types.js";
 
 const DEFAULT_DOMAIN_OPTIONS: ScannerOptions = {
   allowLocalhost: false,

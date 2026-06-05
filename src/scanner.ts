@@ -8,20 +8,20 @@ import {
   isAsciiAlphaNumeric,
   type EmailTextMeta,
 } from "./normalization.js";
-import { isProseBareAtPhrase } from "./scanner/context.js";
+import { isProseBareAtPhrase } from "./scanner/context/index.js";
 import {
   hasBoundary,
   isLocalChar,
   isValidDomain,
   isValidLocal,
-} from "./scanner/rules.js";
-import { tokenize } from "./scanner/tokenizer.js";
+} from "./scanner/rules/index.js";
+import { tokenize } from "./scanner/tokenization/tokenizer.js";
 import {
   SCANNER_PUNCTUATION,
   TOKEN_TYPE,
   TOKEN_VALUE,
   type ScannerOptions,
-} from "./scanner/types.js";
+} from "./scanner/core/types.js";
 import { type EmailFilterOptions } from "./types.js";
 
 const previousContent = (meta: EmailTextMeta, index: number): string => {

@@ -1,7 +1,7 @@
-import { type EmailTextMeta } from "../normalization.js";
+import { type EmailTextMeta } from "../../normalization.js";
 import { hasEmailIntroducerContext } from "./introducers.js";
 import { hasProseLocalContext } from "./prose.js";
-import { TOKEN_VALUE, type Token } from "./types.js";
+import { TOKEN_VALUE, type Token } from "../core/types.js";
 
 export const isProseBareAtPhrase = (
   meta: EmailTextMeta,

@@ -1,4 +1,4 @@
-import { SCANNER_PUNCTUATION, TOKEN_TYPE, type Token } from "./types.js";
+import { SCANNER_PUNCTUATION, TOKEN_TYPE, type Token } from "../core/types.js";
 
 export const SCANNER_WORD = {
   a: "a",

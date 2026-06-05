@@ -1,11 +1,11 @@
-import { type EmailTextMeta } from "../normalization.js";
+import { type EmailTextMeta } from "../../normalization.js";
 import {
   hasEmailLabelContext,
   hasNonEmailProseLabelContext,
 } from "./labels.js";
 import { previousWordInSamePhrase } from "./phrase.js";
-import { isKnownProseLocal } from "./rules.js";
-import { type Token } from "./types.js";
+import { type Token } from "../core/types.js";
+import { isKnownProseLocal } from "../rules/index.js";
 
 export const hasProseLocalContext = (
   meta: EmailTextMeta,

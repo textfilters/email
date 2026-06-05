@@ -1,4 +1,4 @@
-import { isWhitespace, type EmailTextMeta } from "../normalization.js";
+import { isWhitespace, type EmailTextMeta } from "../../normalization.js";
 import {
   isAddressNoun,
   isEmailLabelWord,
@@ -7,9 +7,9 @@ import {
   isLabelSeparatorToken,
   isRecipientObject,
   SCANNER_WORD,
-} from "./rules.js";
+} from "../rules/index.js";
 import { previousWordInSamePhrase } from "./phrase.js";
-import { TOKEN_TYPE, type Token } from "./types.js";
+import { TOKEN_TYPE, type Token } from "../core/types.js";
 
 const hasLabelSeparator = (
   meta: EmailTextMeta,

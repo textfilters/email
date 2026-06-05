@@ -1,5 +1,5 @@
-import { isWhitespace, type EmailTextMeta } from "../normalization.js";
-import { SCANNER_PUNCTUATION, TOKEN_TYPE, type Token } from "./types.js";
+import { isWhitespace, type EmailTextMeta } from "../../normalization.js";
+import { SCANNER_PUNCTUATION, TOKEN_TYPE, type Token } from "../core/types.js";
 
 export const isHorizontalWhitespace = (value: string): boolean =>
   value !== "\n" && value !== "\r" && isWhitespace(value);
