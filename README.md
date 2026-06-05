@@ -78,7 +78,7 @@ and change guide.
 
 ## Release
 
-Releases are created from `v*` tags. The release workflow runs `npm run check`, publishes the package to GitHub Packages, and creates the GitHub Release.
+Releases are managed by Release Please from Conventional Commit history on `master`. When a Release Please release is created, the workflow runs `npm run check` and publishes the package to GitHub Packages. Release tags keep the `v*` pattern.
 
 The package is prepared for publication to GitHub Packages, not the public npm registry.
 

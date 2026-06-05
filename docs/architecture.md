@@ -123,7 +123,7 @@ The scanner intentionally avoids:
 
 ## Release Flow
 
-Release tags use the `v*` pattern. A tag push runs checks, publishes to GitHub Packages, and creates the GitHub Release for the same tag.
+Release Please manages releases from Conventional Commit history on `master`. The release workflow opens or updates release PRs, and when a Release Please release is created it runs checks and publishes the package to GitHub Packages. Release tags keep the `v*` pattern.
 
 ## Safety Rules
 
