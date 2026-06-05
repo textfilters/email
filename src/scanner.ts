@@ -46,6 +46,7 @@ const EMAIL_INTRODUCER_WORDS = new Set([
   "reach",
   "reply",
   "send",
+  "try",
   "write",
 ]);
 const POSSESSIVE_INTRODUCER_WORDS = new Set([
@@ -75,7 +76,9 @@ const DETERMINER_WORDS = new Set([
 ]);
 const ADJECTIVE_INTRODUCER_WORDS = new Set(["email", "mail", "message"]);
 const SENTENCE_INITIAL_PROSE_LOCAL_WORDS = new Set([
+  "apply",
   "located",
+  "shop",
   "study",
   "work",
 ]);
@@ -219,7 +222,10 @@ const hasEmailIntroducerContext = (
 
   if (
     isPossessiveIntroducer(previous) &&
-    (beforePrevious === undefined || isEmailIntroducer(beforePrevious))
+    (beforePrevious === undefined ||
+      isEmailIntroducer(beforePrevious) ||
+      (isPrepositionalIntroducer(beforePrevious) &&
+        isEmailIntroducer(beforeBeforePrevious)))
   ) {
     return true;
   }
@@ -447,21 +453,16 @@ const collectObfuscatedRanges = (
     labels.push(tokens[cursor].value);
     cursor++;
 
-    let hasExplicitDomainSeparator = false;
     while (
       tokens[cursor]?.type === TOKEN_TYPE.dot &&
       tokens[cursor + 1]?.type === TOKEN_TYPE.word
     ) {
-      if (tokens[cursor].wrapped) hasExplicitDomainSeparator = true;
       labels.push(tokens[cursor + 1].value);
       cursor += 2;
     }
 
     if (!isValidDomain(labels, options)) continue;
-    if (
-      !hasExplicitDomainSeparator &&
-      isProseBareAtPhrase(meta, tokens, i, local, at)
-    ) {
+    if (isProseBareAtPhrase(meta, tokens, i, local, at)) {
       continue;
     }
     const endToken = tokens[cursor - 1];

@@ -123,6 +123,9 @@ describe("@textfilters/email", () => {
     expect(filter.censor("send to located at example dot com")).toBe(
       "send to **************************",
     );
+    expect(filter.censor("send to our support at example dot com")).toBe(
+      "send to our **************************",
+    );
   });
 
   it("masks obfuscated email addresses introduced by e-mail wording", () => {
@@ -200,6 +203,12 @@ describe("@textfilters/email", () => {
     expect(filter.censor("Study at example dot com")).toBe(
       "Study at example dot com",
     );
+    expect(filter.censor("Shop at example dot com")).toBe(
+      "Shop at example dot com",
+    );
+    expect(filter.censor("Apply at example dot com")).toBe(
+      "Apply at example dot com",
+    );
     expect(filter.censor("the email service at example dot com is down")).toBe(
       "the email service at example dot com is down",
     );
@@ -214,6 +223,9 @@ describe("@textfilters/email", () => {
     );
     expect(filter.censor("See our site. Located at example dot com")).toBe(
       "See our site. Located at example dot com",
+    );
+    expect(filter.censor("we work at example [dot] com")).toBe(
+      "we work at example [dot] com",
     );
   });
 
