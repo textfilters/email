@@ -39,6 +39,12 @@ export const collectDirectEmailRange = (
   ) {
     domainEnd++;
   }
+  while (
+    domainEnd > atIndex + 1 &&
+    meta.normalized[domainEnd - 1] === TOKEN_VALUE.dotSymbol
+  ) {
+    domainEnd--;
+  }
 
   const local = meta.normalized.slice(localStart, atIndex).join("");
   const domain = meta.normalized.slice(atIndex + 1, domainEnd).join("");

@@ -13,6 +13,7 @@ describe("@textfilters/email curated regressions", () => {
       ["<dev@site.com>", `<${mask("dev@site.com")}>`],
       ["(dev@site.com)", `(${mask("dev@site.com")})`],
       ["[dev@site.com]", `[${mask("dev@site.com")}]`],
+      ["dev@site.com.", `${mask("dev@site.com")}.`],
       ["dev @ site . com", mask("dev @ site . com")],
       ["dev(at)site(dot)com", mask("dev(at)site(dot)com")],
       ["dev [at] site [dot] com", mask("dev [at] site [dot] com")],
@@ -33,7 +34,6 @@ describe("@textfilters/email curated regressions", () => {
       "login@domain.",
       "login@domain.c",
       "login@sub_domain.com",
-      "dev@site.com.",
       "dev собака site точка com",
       "dev-собака-site-точка-ru",
     ];

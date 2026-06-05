@@ -17,7 +17,7 @@ export const isLocalChar = (value: string): boolean =>
 export const isWordChar = (value: string): boolean => WORD_CHAR_RE.test(value);
 
 export const hasBoundary = (value: string): boolean =>
-  value === "" || !isLocalChar(value);
+  value === "" || value === TOKEN_VALUE.dotSymbol || !isLocalChar(value);
 
 export const isValidLocal = (value: string): boolean => {
   // Local-part validation mirrors the direct scanner and the token scanner, so
