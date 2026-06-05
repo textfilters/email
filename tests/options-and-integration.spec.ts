@@ -15,6 +15,17 @@ describe("@textfilters/email options and integration", () => {
     ).toBe("################");
   });
 
+  it("can disable obfuscated email matching", () => {
+    const emailOnlyFilter = createEmailFilter({ matchObfuscated: false });
+
+    expect(emailOnlyFilter.censor("contact user@example.com")).toBe(
+      "contact ****************",
+    );
+    expect(emailOnlyFilter.censor("contact user at example dot com")).toBe(
+      "contact user at example dot com",
+    );
+  });
+
   it("supports localhost when configured", () => {
     expect(
       createEmailFilter({ allowLocalhost: true }).censor("mail user@localhost"),
@@ -53,6 +64,71 @@ describe("@textfilters/email options and integration", () => {
         `email ${user} and ${admin}`,
       ),
     ).toBe(`email ${"*".repeat(user.length)} and ${"*".repeat(admin.length)}`);
+  });
+
+  it("excludes configured email addresses from masking", () => {
+    const configured = createEmailFilter({
+      excludeEmails: ["user@example.com"],
+    });
+
+    expect(
+      configured.censor("mail user@example.com and admin@example.com"),
+    ).toBe("mail user@example.com and *****************");
+    expect(
+      configured.censor(
+        "mail user at example dot com and admin at example dot com",
+      ),
+    ).toBe("mail user at example dot com and ************************");
+  });
+
+  it("excludes configured usernames from masking", () => {
+    const configured = createEmailFilter({
+      excludeUsernames: ["admin"],
+    });
+
+    expect(
+      configured.censor("mail admin@example.com and user@example.com"),
+    ).toBe("mail admin@example.com and ****************");
+    expect(
+      configured.censor(
+        "mail admin at example dot com and user at example dot com",
+      ),
+    ).toBe("mail admin at example dot com and ***********************");
+  });
+
+  it("excludes configured domains from masking", () => {
+    const configured = createEmailFilter({
+      excludeDomains: ["example.com"],
+    });
+
+    expect(
+      configured.censor(
+        "mail user@example.com, admin@sub.example.com, and owner@example.net",
+      ),
+    ).toBe(
+      "mail user@example.com, admin@sub.example.com, and *****************",
+    );
+    expect(
+      configured.censor(
+        "mail user at example dot com and owner at example dot net",
+      ),
+    ).toBe("mail user at example dot com and ************************");
+  });
+
+  it("normalizes configured exclusions before matching", () => {
+    const configured = createEmailFilter({
+      excludeEmails: ["USER@EXAMPLE.COM"],
+      excludeUsernames: ["ＳＵＰＰＯＲＴ"],
+      excludeDomains: ["@EXAMPLE.NET"],
+    });
+
+    expect(
+      configured.censor(
+        "mail user@example.com, support@example.org, admin@sub.example.net, and other@example.io",
+      ),
+    ).toBe(
+      "mail user@example.com, support@example.org, admin@sub.example.net, and ****************",
+    );
   });
 
   it("is idempotent", () => {

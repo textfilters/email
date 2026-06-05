@@ -1,6 +1,14 @@
+export interface ScannerExclusions {
+  readonly emails: ReadonlySet<string>;
+  readonly usernames: ReadonlySet<string>;
+  readonly domains: ReadonlySet<string>;
+}
+
 export interface ScannerOptions {
   readonly allowLocalhost: boolean;
   readonly allowSingleLabelDomain: boolean;
+  readonly matchObfuscated: boolean;
+  readonly exclusions: ScannerExclusions;
 }
 
 export const TOKEN_TYPE = {

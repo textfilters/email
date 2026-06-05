@@ -26,6 +26,22 @@ const safeText = emailFilter.censor("contact user@example.com");
 ```
 
 ```ts
+import { createEmailFilter } from "@textfilters/email";
+
+const emailOnlyFilter = createEmailFilter({ matchObfuscated: false });
+const safeText = emailOnlyFilter.censor("contact user@example.com");
+```
+
+```ts
+import { createEmailFilter } from "@textfilters/email";
+
+const emailFilter = createEmailFilter({
+  excludeDomains: ["example.com"],
+  excludeUsernames: ["support"],
+});
+```
+
+```ts
 import { filter } from "@textfilters/email";
 
 const safeText = filter.censor("contact user [at] example [dot] com");
@@ -46,6 +62,10 @@ The default shared instance is exported as `filter`. It has stable `name: "email
 The package detects direct email addresses such as `user@example.com`, tagged local parts, mixed-case input, subdomains, and common fullwidth symbol variants after NFKC normalization.
 
 It also detects common obfuscated forms such as `user [at] example [dot] com`, `user(at)example(dot)com`, `user at example dot com`, and `user [@] example [.] com`.
+
+Set `matchObfuscated: false` to keep only direct `user@example.com` matching.
+
+Configured exclusions can leave selected full email addresses, local-part usernames, or domains unmasked. Domain exclusions match the exact domain and its subdomains after normalization.
 
 `censor()` preserves JavaScript string length for matched spans where practical and is idempotent. Masking is applied over code points so surrogate pairs are not split.
 
