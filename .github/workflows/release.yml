@@ -41,4 +41,4 @@ jobs:
           gh release create "$GITHUB_REF_NAME"
           --verify-tag
           --title "$GITHUB_REF_NAME"
-          --notes "Initial release for email address and obfuscated-email filtering."
+          --generate-notes
