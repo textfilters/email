@@ -56,6 +56,12 @@ const DIRECT_EMAIL_INTRODUCER_WORDS = new Set([
   "mail",
   "message",
 ]);
+const PREPOSITIONAL_EMAIL_INTRODUCER_WORDS = new Set([
+  "reply",
+  "send",
+  "write",
+]);
+const PHRASAL_EMAIL_INTRODUCER_WORDS = new Set(["reach"]);
 const POSSESSIVE_INTRODUCER_WORDS = new Set([
   "her",
   "his",
@@ -91,6 +97,7 @@ const ADJECTIVE_INTRODUCER_WORDS = new Set([
   "mail",
   "message",
 ]);
+const COURTESY_COMMAND_WORDS = new Set(["kindly", "please"]);
 const PROSE_OBJECT_LOCAL_WORDS = new Set([
   "code",
   "form",
@@ -145,6 +152,14 @@ const isDirectEmailIntroducer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word &&
   DIRECT_EMAIL_INTRODUCER_WORDS.has(token.value);
 
+const isPrepositionalEmailIntroducer = (token: Token | undefined): boolean =>
+  token?.type === TOKEN_TYPE.word &&
+  PREPOSITIONAL_EMAIL_INTRODUCER_WORDS.has(token.value);
+
+const isPhrasalEmailIntroducer = (token: Token | undefined): boolean =>
+  token?.type === TOKEN_TYPE.word &&
+  PHRASAL_EMAIL_INTRODUCER_WORDS.has(token.value);
+
 const isPossessiveIntroducer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word &&
   POSSESSIVE_INTRODUCER_WORDS.has(token.value);
@@ -171,13 +186,20 @@ const isRecipientObject = (token: Token | undefined): boolean =>
 const isDeterminer = (token: Token | undefined): boolean =>
   token?.type === TOKEN_TYPE.word && DETERMINER_WORDS.has(token.value);
 
+const isCourtesyCommand = (token: Token | undefined): boolean =>
+  token?.type === TOKEN_TYPE.word && COURTESY_COMMAND_WORDS.has(token.value);
+
 const isAdjectivalEmailIntroducer = (
   token: Token,
   previous: Token | undefined,
   local: Token,
 ): boolean =>
   ADJECTIVE_INTRODUCER_WORDS.has(token.value) &&
-  (isDeterminer(previous) || PROSE_OBJECT_LOCAL_WORDS.has(local.value));
+  (isDeterminer(previous) ||
+    (previous !== undefined &&
+      !isEmailIntroducer(previous) &&
+      !isCourtesyCommand(previous) &&
+      PROSE_OBJECT_LOCAL_WORDS.has(local.value)));
 
 const isHorizontalWhitespace = (value: string): boolean =>
   value !== "\n" && value !== "\r" && isWhitespace(value);
@@ -220,17 +242,19 @@ const hasPrepositionalEmailIntroducerContext = (
   if (!isPrepositionalIntroducer(preposition)) return false;
 
   const beforePreposition = previousWordInSamePhrase(meta, tokens, index);
-  if (isEmailIntroducer(beforePreposition)) return true;
+  if (isPrepositionalEmailIntroducer(beforePreposition)) return true;
 
   const beforeBeforePreposition = previousWordInSamePhrase(
     meta,
     tokens,
     index - 1,
   );
+  if (isDirectObject(beforePreposition)) {
+    return isPrepositionalEmailIntroducer(beforeBeforePreposition);
+  }
   return (
-    (isDirectObject(beforePreposition) ||
-      isPhrasalParticle(beforePreposition)) &&
-    isEmailIntroducer(beforeBeforePreposition)
+    isPhrasalParticle(beforePreposition) &&
+    isPhrasalEmailIntroducer(beforeBeforePreposition)
   );
 };
 
@@ -284,7 +308,8 @@ const hasEmailIntroducerContext = (
 
   if (
     isPossessiveIntroducer(previous) &&
-    (beforePrevious === undefined ||
+    ((beforePrevious === undefined &&
+      !PROSE_OBJECT_LOCAL_WORDS.has(local.value)) ||
       isEmailIntroducer(beforePrevious) ||
       hasPrepositionalEmailIntroducerContext(meta, tokens, index - 2))
   ) {
