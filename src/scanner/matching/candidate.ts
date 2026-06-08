@@ -3,7 +3,8 @@ import { type TextCodePointRange } from "@textfilters/core";
 import { type EmailTextMeta } from "../../normalization.js";
 import { type EmailCandidate, type ScannerOptions } from "../core/types.js";
 import {
-  hasBoundary,
+  hasLeadingBoundary,
+  hasTrailingBoundary,
   isValidDomain,
   isValidLocal,
 } from "../rules/validators.js";
@@ -17,8 +18,10 @@ export const isCandidateMatchable = (
 ): boolean => {
   if (!isValidLocal(candidate.local)) return false;
   if (!isValidDomain(candidate.labels, options)) return false;
-  if (!hasBoundary(previousContent(meta, candidate.start - 1))) return false;
-  if (!hasBoundary(nextContent(meta, candidate.end))) return false;
+  if (!hasLeadingBoundary(previousContent(meta, candidate.start - 1))) {
+    return false;
+  }
+  if (!hasTrailingBoundary(nextContent(meta, candidate.end))) return false;
   return true;
 };
 
