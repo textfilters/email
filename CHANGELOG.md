@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/textfilters/email/compare/v0.2.2...v0.2.3) (2026-06-08)
+
+
+### Bug Fixes
+
+* added email regression coverage ([0b5fbe3](https://github.com/textfilters/email/commit/0b5fbe362c99f629136a9becd4c96acefdf05f4d))
+
 ## [0.2.2](https://github.com/textfilters/email/compare/v0.2.1...v0.2.2) (2026-06-05)
 
 
