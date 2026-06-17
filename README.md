@@ -1,6 +1,12 @@
 # @textfilters/email
 
-Email address and obfuscated-email filtering for composable text moderation.
+TypeScript email detection and obfuscated email filtering for content
+moderation, chat moderation, UGC moderation, censoring, contact redaction, and
+PII redaction workflows.
+
+Use `@textfilters/email` to detect direct email addresses, obfuscated email
+forms, excluded domains, and guarded false positives inside a composable
+TypeScript text filtering library.
 
 ## Installation
 
@@ -15,6 +21,14 @@ Install with GitHub npm authentication configured. GitHub Packages requires auth
 ```sh
 npm install @textfilters/core @textfilters/email
 ```
+
+## Use Cases
+
+- Redact email addresses from user-generated text before display or indexing.
+- Detect obfuscated email forms in chat moderation and UGC moderation pipelines.
+- Apply contact redaction while preserving configured support addresses or
+  trusted domains.
+- Combine email filtering with URL, phone, profanity, and spam checks.
 
 ## Usage
 
@@ -75,6 +89,17 @@ False-positive guards avoid package scopes, social handles, prose-only `at` and 
 
 See [docs/architecture.md](docs/architecture.md) for the scanner flow, module map,
 and change guide.
+
+## Related Textfilters Packages
+
+- `@textfilters/core` for shared pipeline, normalization, and range masking
+  primitives.
+- `@textfilters/url` for URL detection, obfuscated links, and safe link
+  censoring.
+- `@textfilters/phone` for phone number detection and contact redaction.
+- `@textfilters/profanity` for Russian profanity filtering and taxonomy-backed
+  moderation.
+- `@textfilters/spam` for actor-based anti-spam guard checks.
 
 ## Release
 
