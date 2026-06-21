@@ -1,6 +1,5 @@
 import {
-  maskCodePointRanges,
-  normalizeMaskChar,
+  maskCodePointRangesPreservingLength,
   type TextCodePointRange,
 } from "@textfilters/core";
 
@@ -11,26 +10,19 @@ import {
   type EmailFilterOptions,
 } from "./types.js";
 
-const normalizeLengthPreservingMaskChar = (
-  maskChar: string | undefined,
-): string => {
-  const normalized = normalizeMaskChar(maskChar);
-  return normalized.length === 1 ? normalized : "*";
-};
-
 const maskEmailRanges = (
   codePoints: readonly string[],
   ranges: readonly TextCodePointRange[],
   maskChar: string,
 ): string => {
   if (ranges.length === 0) return codePoints.join("");
-  return maskCodePointRanges(codePoints, ranges, maskChar);
+  return maskCodePointRangesPreservingLength(codePoints, ranges, maskChar);
 };
 
 export function createEmailFilter(
   options: EmailFilterOptions = {},
 ): EmailFilter {
-  const maskChar = normalizeLengthPreservingMaskChar(options.maskChar);
+  const maskChar = options.maskChar ?? "*";
 
   return {
     name: EMAIL_FILTER_NAME,
