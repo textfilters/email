@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/textfilters/email/compare/v0.2.4...v0.2.5) (2026-06-21)
+
+
+### Bug Fixes
+
+* adopt core length-preserving masking ([eb6dc80](https://github.com/textfilters/email/commit/eb6dc8031f9c2d52c410ce50fe36506b603537f8))
+
 ## [0.2.4](https://github.com/textfilters/email/compare/v0.2.3...v0.2.4) (2026-06-09)
 
 
