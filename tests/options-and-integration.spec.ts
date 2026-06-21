@@ -13,6 +13,9 @@ describe("@textfilters/email options and integration", () => {
     expect(
       createEmailFilter({ maskChar: "#" }).censor("user@example.com"),
     ).toBe("################");
+    expect(
+      createEmailFilter({ maskChar: "💥" }).censor("user@example.com"),
+    ).toBe("****************");
   });
 
   it("keeps output length stable for normal mask characters", () => {
@@ -23,6 +26,14 @@ describe("@textfilters/email options and integration", () => {
     expect(output).toBe(
       "contact ################ and ########################",
     );
+  });
+
+  it("keeps output length stable for astral input", () => {
+    const source = "📩 contact user@example.com now";
+    const output = filter.censor(source);
+
+    expect(output).toBe("📩 contact **************** now");
+    expect(output).toHaveLength(source.length);
   });
 
   it("can disable obfuscated email matching", () => {
@@ -102,6 +113,10 @@ describe("@textfilters/email options and integration", () => {
     expect(configured.censor("mail user at example dot com")).toBe(
       "mail user at example dot com",
     );
+
+    const source = "📩 mail user@example.com";
+    expect(configured.censor(source)).toBe(source);
+    expect(configured.censor(source)).toHaveLength(source.length);
   });
 
   it("excludes configured usernames from masking", () => {
