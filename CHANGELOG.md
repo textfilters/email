@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/textfilters/email/compare/v0.2.5...v0.2.6) (2026-06-25)
+
+
+### Bug Fixes
+
+* use shared public input normalization ([3f21141](https://github.com/textfilters/email/commit/3f2114129bed5f690f4a7dc8de8b16e09e31b72a))
+
 ## [0.2.5](https://github.com/textfilters/email/compare/v0.2.4...v0.2.5) (2026-06-21)
 
 
