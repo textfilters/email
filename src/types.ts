@@ -1,5 +1,3 @@
-import { type TextCensor } from "@textfilters/core";
-
 export const EMAIL_FILTER_NAME = "email";
 
 export interface EmailFilterOptions {
@@ -12,6 +10,7 @@ export interface EmailFilterOptions {
   readonly excludeDomains?: readonly string[];
 }
 
-export type EmailFilter = TextCensor & {
+export interface EmailFilter {
   readonly name: typeof EMAIL_FILTER_NAME;
-};
+  censor(text: unknown): string;
+}
