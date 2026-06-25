@@ -3,6 +3,16 @@ import { describe, expect, it } from "vitest";
 import { filter } from "../src/index.js";
 
 describe("@textfilters/email basic matching", () => {
+  it("normalizes empty and non-string public input through core", () => {
+    expect(filter.censor("")).toBe("");
+    expect(filter.censor(null)).toBe("");
+    expect(filter.censor(undefined)).toBe("");
+    expect(filter.censor(12345)).toBe("12345");
+    expect(filter.censor({ toString: () => "user@example.com" })).toBe(
+      "****************",
+    );
+  });
+
   it("masks direct email addresses", () => {
     expect(filter.censor("contact user@example.com")).toBe(
       "contact ****************",
