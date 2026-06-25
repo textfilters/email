@@ -1,5 +1,6 @@
 import {
   maskCodePointRangesPreservingLength,
+  normalizeTextInput,
   type TextCodePointRange,
 } from "@textfilters/core";
 
@@ -27,8 +28,7 @@ export function createEmailFilter(
   return {
     name: EMAIL_FILTER_NAME,
     censor(text) {
-      if (text === null || text === undefined) return "";
-      const source = String(text);
+      const source = normalizeTextInput(text);
       if (!source) return source;
       const codePoints = Array.from(source);
       const ranges = collectEmailRanges(source, options);
