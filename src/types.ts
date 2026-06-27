@@ -1,3 +1,5 @@
+import type { TextCodePointRange } from "@textfilters/core";
+
 export const EMAIL_FILTER_NAME = "email";
 
 export interface EmailFilterOptions {
@@ -13,4 +15,18 @@ export interface EmailFilterOptions {
 export interface EmailFilter {
   readonly name: typeof EMAIL_FILTER_NAME;
   censor(text: unknown): string;
+}
+
+export interface EmailScanInput {
+  readonly text: string;
+  readonly codePoints: readonly string[];
+}
+
+export interface EmailRangeScanResult {
+  readonly ranges: readonly TextCodePointRange[];
+}
+
+export interface EmailRangeScanner {
+  readonly name: typeof EMAIL_FILTER_NAME;
+  scan(input: EmailScanInput): EmailRangeScanResult;
 }

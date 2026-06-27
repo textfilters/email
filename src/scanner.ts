@@ -1,4 +1,5 @@
 import {
+  lowerNfkc,
   type TextCodePointRange,
   mergeCodePointRanges,
 } from "@textfilters/core";
@@ -8,14 +9,48 @@ import { collectDirectEmailRange } from "./scanner/matching/direct.js";
 import { collectObfuscatedEmailRanges } from "./scanner/matching/obfuscated.js";
 import { createExclusionSets } from "./scanner/rules/exclusions.js";
 import { TOKEN_VALUE, type ScannerOptions } from "./scanner/core/types.js";
-import { type EmailFilterOptions } from "./types.js";
+import {
+  EMAIL_FILTER_NAME,
+  type EmailFilterOptions,
+  type EmailRangeScanner,
+} from "./types.js";
+
+export interface EmailScannerConfig extends EmailFilterOptions {}
+
+export function createEmailScanner(
+  config: EmailScannerConfig = {},
+): EmailRangeScanner {
+  const scannerOptions = createScannerOptions(config);
+
+  return {
+    name: EMAIL_FILTER_NAME,
+    scan(input) {
+      return {
+        ranges: scanEmailRangesWithOptions(input.text, scannerOptions),
+      };
+    },
+  };
+}
+
+export function scanEmailRanges(
+  value: unknown,
+  options: EmailFilterOptions = {},
+): readonly TextCodePointRange[] {
+  return scanEmailRangesWithOptions(
+    String(value ?? ""),
+    createScannerOptions(options),
+  );
+}
 
 export function collectEmailRanges(
   value: string,
   options: EmailFilterOptions = {},
 ): readonly TextCodePointRange[] {
-  const meta = createEmailTextMeta(value);
-  const scannerOptions: ScannerOptions = {
+  return scanEmailRanges(value, options);
+}
+
+function createScannerOptions(options: EmailFilterOptions): ScannerOptions {
+  return {
     allowLocalhost: options.allowLocalhost === true,
     allowSingleLabelDomain: options.allowSingleLabelDomain === true,
     matchObfuscated: options.matchObfuscated !== false,
@@ -25,6 +60,17 @@ export function collectEmailRanges(
       options.excludeDomains,
     ),
   };
+}
+
+function scanEmailRangesWithOptions(
+  value: string,
+  scannerOptions: ScannerOptions,
+): readonly TextCodePointRange[] {
+  if (!value || !hasEmailCandidate(value, scannerOptions)) {
+    return [];
+  }
+
+  const meta = createEmailTextMeta(value);
   const ranges: TextCodePointRange[] = [];
 
   // Direct addresses are character-scanned around literal "@" so package
@@ -44,4 +90,41 @@ export function collectEmailRanges(
     ranges.push(...collectObfuscatedEmailRanges(meta, scannerOptions));
   }
   return mergeCodePointRanges(ranges);
+}
+
+function hasEmailCandidate(
+  value: string,
+  scannerOptions: ScannerOptions,
+): boolean {
+  const normalized = lowerNfkc(value);
+  if (normalized.includes(TOKEN_VALUE.atSymbol)) return true;
+  if (!scannerOptions.matchObfuscated) return false;
+
+  if (!hasWordCandidate(normalized, TOKEN_VALUE.atWord)) return false;
+  return (
+    scannerOptions.allowLocalhost ||
+    scannerOptions.allowSingleLabelDomain ||
+    normalized.includes(TOKEN_VALUE.dotSymbol) ||
+    hasWordCandidate(normalized, TOKEN_VALUE.dotWord)
+  );
+}
+
+function hasWordCandidate(value: string, word: string): boolean {
+  for (
+    let index = value.indexOf(word);
+    index >= 0;
+    index = value.indexOf(word, index + 1)
+  ) {
+    const before = value[index - 1] ?? "";
+    const after = value[index + word.length] ?? "";
+    if (!isAsciiLetter(before) && !isAsciiLetter(after)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function isAsciiLetter(value: string): boolean {
+  return value.length === 1 && value >= "a" && value <= "z";
 }
