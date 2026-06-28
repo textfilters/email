@@ -69,6 +69,14 @@ const pipeline = createTextPipeline().use(emailFilter);
 const result = pipeline.censor("contact user@example.com");
 ```
 
+```ts
+import { createEmailScanner } from "@textfilters/email";
+
+const scanner = createEmailScanner();
+const codePoints = Array.from("contact user@example.com");
+const result = scanner.scan({ text: "contact user@example.com", codePoints });
+```
+
 The default shared instance is exported as `filter`. It has stable `name: "email"`.
 
 ## Behavior
@@ -89,6 +97,9 @@ False-positive guards avoid package scopes, social handles, prose-only `at` and 
 
 See [docs/architecture.md](docs/architecture.md) for the scanner flow, module map,
 and change guide.
+
+Run `npm run benchmark:email` from this package to compare clean, direct,
+obfuscated, and late-match email censoring cases on the same machine.
 
 ## Related Textfilters Packages
 

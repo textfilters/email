@@ -4,7 +4,7 @@ import {
   type TextCodePointRange,
 } from "@textfilters/core";
 
-import { collectEmailRanges } from "./scanner.js";
+import { createEmailScanner } from "./scanner.js";
 import {
   EMAIL_FILTER_NAME,
   type EmailFilter,
@@ -23,6 +23,7 @@ const maskEmailRanges = (
 export function createEmailFilter(
   options: EmailFilterOptions = {},
 ): EmailFilter {
+  const scanner = createEmailScanner(options);
   const maskChar = options.maskChar ?? "*";
 
   return {
@@ -31,7 +32,7 @@ export function createEmailFilter(
       const source = normalizeTextInput(text);
       if (!source) return source;
       const codePoints = Array.from(source);
-      const ranges = collectEmailRanges(source, options);
+      const ranges = scanner.scan({ text: source, codePoints }).ranges;
       return maskEmailRanges(codePoints, ranges, maskChar);
     },
   };
