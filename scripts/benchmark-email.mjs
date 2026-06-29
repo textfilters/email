@@ -1,11 +1,12 @@
 import { performance } from "node:perf_hooks";
-import { createEmailFilter } from "../dist/index.js";
+import { createEmailFilter, createEmailScanner } from "../dist/index.js";
 
 const ITERATIONS = 1_000;
 const SETUP_ITERATIONS = 100;
 
 const SHORT_CLEAN = "Hello world";
 const LONG_CLEAN = "The quick brown fox jumps over the lazy dog. ".repeat(50);
+const NO_DOT_AT = "Contact user@example for details";
 const DIRECT_EMAIL = "Contact user@example.com for details";
 const OBFUSCATED_EMAIL = "Contact user [at] example [dot] com for details";
 const LATE_MATCH =
@@ -38,11 +39,33 @@ function printResults(results) {
 }
 
 const filter = createEmailFilter();
+const scanner = createEmailScanner();
+const input = (text) => ({ text, codePoints: Array.from(text) });
+const hintedInput = (text) => ({
+  text,
+  codePoints: Array.from(text),
+  hints: {
+    textLength: text.length,
+    hasNonAscii: /[^\x00-\x7f]/u.test(text),
+    hasAtSign: text.includes("@"),
+    hasDot: text.includes("."),
+  },
+});
 
 printResults([
   bench("createEmailFilter()", () => createEmailFilter(), SETUP_ITERATIONS),
+  bench("createEmailScanner()", () => createEmailScanner(), SETUP_ITERATIONS),
+  bench("check short clean", () => scanner.check(input(SHORT_CLEAN))),
+  bench("check hinted short clean", () =>
+    scanner.check(hintedInput(SHORT_CLEAN)),
+  ),
+  bench("check long clean", () => scanner.check(input(LONG_CLEAN))),
+  bench("check no-dot at text", () => scanner.check(input(NO_DOT_AT))),
+  bench("check direct email", () => scanner.check(input(DIRECT_EMAIL))),
+  bench("check late-match email", () => scanner.check(input(LATE_MATCH))),
   bench("censor short clean", () => filter.censor(SHORT_CLEAN)),
   bench("censor long clean", () => filter.censor(LONG_CLEAN)),
+  bench("censor no-dot at text", () => filter.censor(NO_DOT_AT)),
   bench("censor direct email", () => filter.censor(DIRECT_EMAIL)),
   bench("censor obfuscated email", () => filter.censor(OBFUSCATED_EMAIL)),
   bench("censor late-match email", () => filter.censor(LATE_MATCH)),

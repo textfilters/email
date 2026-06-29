@@ -75,6 +75,15 @@ import { createEmailScanner } from "@textfilters/email";
 const scanner = createEmailScanner();
 const codePoints = Array.from("contact user@example.com");
 const result = scanner.scan({ text: "contact user@example.com", codePoints });
+const hasEmail = scanner.check({
+  text: "contact user@example.com",
+  codePoints,
+});
+
+scanner.scan({ text: "contact user@example.com", codePoints }, (match) => {
+  console.log(match.range);
+  return false;
+});
 ```
 
 The default shared instance is exported as `filter`. It has stable `name: "email"`.
@@ -98,8 +107,9 @@ False-positive guards avoid package scopes, social handles, prose-only `at` and 
 See [docs/architecture.md](docs/architecture.md) for the scanner flow, module map,
 and change guide.
 
-Run `npm run benchmark:email` from this package to compare clean, direct,
-obfuscated, and late-match email censoring cases on the same machine.
+Run `npm run benchmark:email` from this package to compare scanner setup,
+`check()`, clean, no-dot `@` text, direct, obfuscated, and late-match email
+censoring cases on the same machine.
 
 ## Related Textfilters Packages
 

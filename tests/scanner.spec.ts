@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  checkEmailRanges,
   createEmailScanner,
+  scanEmailRangeMatches,
   scanEmailRanges,
   EMAIL_FILTER_NAME,
 } from "../src/index.js";
@@ -41,6 +43,99 @@ describe("@textfilters/email scanner", () => {
         codePoints: Array.from("plain words only"),
       }),
     ).toEqual({ ranges: [] });
+  });
+
+  it("checks candidates without collecting every range", () => {
+    const scanner = createEmailScanner();
+    const text = "contact first@example.com and second@example.com";
+    const input = { text, codePoints: Array.from(text) };
+
+    expect(scanner.check(input)).toBe(true);
+    expect(checkEmailRanges(input)).toBe(true);
+    expect(scanner.check({ text: "plain words only", codePoints: [] })).toBe(
+      false,
+    );
+  });
+
+  it("streams ranges into a sink and supports early stop", () => {
+    const scanner = createEmailScanner();
+    const text = "contact first@example.com and second@example.com";
+    const seen: Array<readonly [number, number]> = [];
+
+    const completed = scanner.scan(
+      { text, codePoints: Array.from(text) },
+      (match) => {
+        seen.push(match.range);
+        return false;
+      },
+    );
+
+    expect(completed).toBe(false);
+    expect(seen).toEqual([[8, 25]]);
+  });
+
+  it("streams mixed direct and obfuscated ranges in source order", () => {
+    const scanner = createEmailScanner();
+    const text = "user at example dot com then admin@example.org";
+    const seen: Array<readonly [number, number]> = [];
+
+    const completed = scanner.scan(
+      { text, codePoints: Array.from(text) },
+      (match) => {
+        seen.push(match.range);
+        return false;
+      },
+    );
+
+    expect(completed).toBe(false);
+    expect(seen).toEqual([[0, 23]]);
+  });
+
+  it("merges overlapping direct and obfuscated ranges before streaming", () => {
+    const scanner = createEmailScanner();
+    const text = "user@example.com dot org";
+    const seen: Array<readonly [number, number]> = [];
+
+    const completed = scanner.scan(
+      { text, codePoints: Array.from(text) },
+      (match) => {
+        seen.push(match.range);
+        return false;
+      },
+    );
+
+    expect(completed).toBe(false);
+    expect(seen).toEqual([[0, 24]]);
+  });
+
+  it("uses shared-style hints to skip clearly clean text", () => {
+    expect(
+      checkEmailRanges({
+        text: "plain words only",
+        codePoints: Array.from("plain words only"),
+        hints: {
+          textLength: "plain words only".length,
+          hasNonAscii: false,
+          hasAtSign: false,
+          hasDot: false,
+        },
+      }),
+    ).toBe(false);
+  });
+
+  it("streams direct, punctuation-trimmed, and obfuscated ranges", () => {
+    const text = "mail user@example.com, then admin [at] example [dot] org.";
+    const seen: Array<readonly [number, number]> = [];
+
+    expect(
+      scanEmailRangeMatches({ text, codePoints: Array.from(text) }, (match) => {
+        seen.push(match.range);
+      }),
+    ).toBe(true);
+    expect(seen).toEqual([
+      [5, 21],
+      [28, 56],
+    ]);
   });
 
   it("preserves scanner option behavior", () => {

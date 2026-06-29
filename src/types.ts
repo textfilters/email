@@ -20,13 +20,28 @@ export interface EmailFilter {
 export interface EmailScanInput {
   readonly text: string;
   readonly codePoints: readonly string[];
+  readonly hints?: {
+    readonly textLength?: number;
+    readonly hasNonAscii?: boolean;
+    readonly hasAtSign?: boolean;
+    readonly hasDot?: boolean;
+  };
 }
 
 export interface EmailRangeScanResult {
   readonly ranges: readonly TextCodePointRange[];
 }
 
+export interface EmailRangeMatch {
+  readonly range: TextCodePointRange;
+}
+
+export type EmailRangeMatchSink = (match: EmailRangeMatch) => boolean | void;
+
 export interface EmailRangeScanner {
   readonly name: typeof EMAIL_FILTER_NAME;
+  readonly allocationAware: true;
+  check(input: EmailScanInput): boolean;
   scan(input: EmailScanInput): EmailRangeScanResult;
+  scan(input: EmailScanInput, sink: EmailRangeMatchSink): boolean | void;
 }
