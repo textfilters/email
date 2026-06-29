@@ -97,10 +97,13 @@ export const createObfuscatedEmailRangeCursor = (
         if (!isCandidateMatchable(meta, candidate, options)) continue;
 
         acceptedListLocalIndexes.add(localIndex);
-        index = cursor;
-        if (!isCandidateExcluded(candidate, options)) {
-          return [candidate.start, candidate.end];
+        if (isCandidateExcluded(candidate, options)) {
+          index = cursor - 1;
+          continue;
         }
+
+        index = cursor;
+        return [candidate.start, candidate.end];
       }
 
       return null;

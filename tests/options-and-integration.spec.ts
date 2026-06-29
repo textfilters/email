@@ -100,6 +100,11 @@ describe("@textfilters/email options and integration", () => {
         "mail user at example dot com and admin at example dot com",
       ),
     ).toBe("mail user at example dot com and ************************");
+
+    const admin = "admin at example dot org";
+    expect(configured.censor(`mail user at example dot com, ${admin}`)).toBe(
+      `mail user at example dot com, ${"*".repeat(admin.length)}`,
+    );
   });
 
   it("applies full-address exclusions consistently to direct and obfuscated candidates", () => {
