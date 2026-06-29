@@ -40,6 +40,7 @@ export type EmailRangeMatchSink = (match: EmailRangeMatch) => boolean | void;
 
 export interface EmailRangeScanner {
   readonly name: typeof EMAIL_FILTER_NAME;
+  readonly allocationAware: true;
   check(input: EmailScanInput): boolean;
   scan(input: EmailScanInput): EmailRangeScanResult;
   scan(input: EmailScanInput, sink: EmailRangeMatchSink): boolean | void;

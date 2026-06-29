@@ -91,6 +91,23 @@ describe("@textfilters/email scanner", () => {
     expect(seen).toEqual([[0, 23]]);
   });
 
+  it("merges overlapping direct and obfuscated ranges before streaming", () => {
+    const scanner = createEmailScanner();
+    const text = "user@example.com dot org";
+    const seen: Array<readonly [number, number]> = [];
+
+    const completed = scanner.scan(
+      { text, codePoints: Array.from(text) },
+      (match) => {
+        seen.push(match.range);
+        return false;
+      },
+    );
+
+    expect(completed).toBe(false);
+    expect(seen).toEqual([[0, 24]]);
+  });
+
   it("uses shared-style hints to skip clearly clean text", () => {
     expect(
       checkEmailRanges({

@@ -6,7 +6,11 @@ import {
 
 import { createEmailTextMeta } from "./normalization.js";
 import { collectDirectEmailRange } from "./scanner/matching/direct.js";
-import { collectObfuscatedEmailRanges } from "./scanner/matching/obfuscated.js";
+import {
+  collectObfuscatedEmailRangeMatches,
+  collectObfuscatedEmailRanges,
+  createObfuscatedEmailRangeCursor,
+} from "./scanner/matching/obfuscated.js";
 import { createExclusionSets } from "./scanner/rules/exclusions.js";
 import { TOKEN_VALUE, type ScannerOptions } from "./scanner/core/types.js";
 import {
@@ -40,6 +44,7 @@ export function createEmailScanner(
 
   return {
     name: EMAIL_FILTER_NAME,
+    allocationAware: true,
     check(input) {
       return checkEmailRangesWithOptions(input, scannerOptions);
     },
@@ -140,10 +145,14 @@ function checkEmailRangesWithOptions(
     if (collectDirectEmailRange(meta, i, scannerOptions)) return true;
   }
 
-  return (
-    scannerOptions.matchObfuscated &&
-    collectObfuscatedEmailRanges(meta, scannerOptions).length > 0
-  );
+  if (!scannerOptions.matchObfuscated) return false;
+
+  let found = false;
+  collectObfuscatedEmailRangeMatches(meta, scannerOptions, () => {
+    found = true;
+    return false;
+  });
+  return found;
 }
 
 function scanEmailRangeMatchesWithOptions(
@@ -154,41 +163,108 @@ function scanEmailRangeMatchesWithOptions(
   if (!hasEmailCandidateInput(input, scannerOptions)) return true;
 
   const meta = createEmailTextMeta(input.text);
-  const ranges: TextCodePointRange[] = [];
-  const emitted: TextCodePointRange[] = [];
-  const emit = (range: TextCodePointRange): boolean => {
+  return streamMergedEmailRanges(meta, scannerOptions, (range) =>
+    sink({ range }),
+  );
+}
+
+interface RangeCursor {
+  next(): TextCodePointRange | null;
+}
+
+function streamMergedEmailRanges(
+  meta: ReturnType<typeof createEmailTextMeta>,
+  scannerOptions: ScannerOptions,
+  sink: (range: TextCodePointRange) => boolean | void,
+): boolean {
+  const direct = createDirectRangeCursor(meta, scannerOptions);
+  const obfuscated = scannerOptions.matchObfuscated
+    ? createObfuscatedRangeCursor(meta, scannerOptions)
+    : emptyRangeCursor();
+  let nextDirect = direct.next();
+  let nextObfuscated = obfuscated.next();
+  let pending: TextCodePointRange | null = null;
+
+  const takeNext = (): TextCodePointRange | null => {
+    if (nextDirect === null && nextObfuscated === null) return null;
+    if (nextDirect === null) {
+      const range = nextObfuscated;
+      nextObfuscated = obfuscated.next();
+      return range;
+    }
+    if (nextObfuscated === null) {
+      const range = nextDirect;
+      nextDirect = direct.next();
+      return range;
+    }
     if (
-      emitted.some(
-        (existing) => existing[0] === range[0] && existing[1] === range[1],
-      )
+      nextDirect[0] < nextObfuscated[0] ||
+      (nextDirect[0] === nextObfuscated[0] &&
+        nextDirect[1] <= nextObfuscated[1])
     ) {
-      return true;
+      const range = nextDirect;
+      nextDirect = direct.next();
+      return range;
     }
 
-    emitted.push(range);
-    return sink({ range }) !== false;
+    const range = nextObfuscated;
+    nextObfuscated = obfuscated.next();
+    return range;
   };
 
-  for (let i = 0; i < meta.normalized.length; i++) {
-    if (meta.normalized[i] !== TOKEN_VALUE.atSymbol) continue;
-    const range = collectDirectEmailRange(meta, i, scannerOptions);
-    if (range) {
-      ranges.push(range);
-      i = range[1] - 1;
+  for (let range = takeNext(); range !== null; range = takeNext()) {
+    if (pending === null) {
+      pending = range;
+      continue;
     }
+
+    if (range[0] <= pending[1]) {
+      pending = [pending[0], Math.max(pending[1], range[1])];
+      continue;
+    }
+
+    if (sink(pending) === false) return false;
+    pending = range;
   }
 
-  if (scannerOptions.matchObfuscated) {
-    ranges.push(...collectObfuscatedEmailRanges(meta, scannerOptions));
-  }
+  return pending === null || sink(pending) !== false;
+}
 
-  ranges.sort((left, right) => left[0] - right[0] || left[1] - right[1]);
+function createDirectRangeCursor(
+  meta: ReturnType<typeof createEmailTextMeta>,
+  scannerOptions: ScannerOptions,
+): RangeCursor {
+  let index = 0;
 
-  for (const range of ranges) {
-    if (!emit(range)) return false;
-  }
+  return {
+    next() {
+      for (; index < meta.normalized.length; index++) {
+        if (meta.normalized[index] !== TOKEN_VALUE.atSymbol) continue;
+        const range = collectDirectEmailRange(meta, index, scannerOptions);
+        if (range) {
+          index = range[1];
+          return range;
+        }
+      }
 
-  return true;
+      return null;
+    },
+  };
+}
+
+function createObfuscatedRangeCursor(
+  meta: ReturnType<typeof createEmailTextMeta>,
+  scannerOptions: ScannerOptions,
+): RangeCursor {
+  return createObfuscatedEmailRangeCursor(meta, scannerOptions);
+}
+
+function emptyRangeCursor(): RangeCursor {
+  return {
+    next() {
+      return null;
+    },
+  };
 }
 
 function hasEmailCandidateInput(
