@@ -12,7 +12,9 @@ import { TOKEN_VALUE, type ScannerOptions } from "./scanner/core/types.js";
 import {
   EMAIL_FILTER_NAME,
   type EmailFilterOptions,
+  type EmailRangeMatchSink,
   type EmailRangeScanner,
+  type EmailScanInput,
 } from "./types.js";
 
 export interface EmailScannerConfig extends EmailFilterOptions {}
@@ -22,13 +24,26 @@ export function createEmailScanner(
 ): EmailRangeScanner {
   const scannerOptions = createScannerOptions(config);
 
-  return {
-    name: EMAIL_FILTER_NAME,
-    scan(input) {
+  function scan(input: EmailScanInput): {
+    ranges: readonly TextCodePointRange[];
+  };
+  function scan(input: EmailScanInput, sink: EmailRangeMatchSink): boolean;
+  function scan(input: EmailScanInput, sink?: EmailRangeMatchSink) {
+    if (sink === undefined) {
       return {
         ranges: scanEmailRangesWithOptions(input.text, scannerOptions),
       };
+    }
+
+    return scanEmailRangeMatchesWithOptions(input, scannerOptions, sink);
+  }
+
+  return {
+    name: EMAIL_FILTER_NAME,
+    check(input) {
+      return checkEmailRangesWithOptions(input, scannerOptions);
     },
+    scan,
   };
 }
 
@@ -66,7 +81,9 @@ function scanEmailRangesWithOptions(
   value: string,
   scannerOptions: ScannerOptions,
 ): readonly TextCodePointRange[] {
-  if (!value || !hasEmailCandidate(value, scannerOptions)) {
+  if (
+    !hasEmailCandidateInput({ text: value, codePoints: [] }, scannerOptions)
+  ) {
     return [];
   }
 
@@ -92,6 +109,103 @@ function scanEmailRangesWithOptions(
   return mergeCodePointRanges(ranges);
 }
 
+export function checkEmailRanges(
+  input: EmailScanInput,
+  options: EmailFilterOptions = {},
+): boolean {
+  return checkEmailRangesWithOptions(input, createScannerOptions(options));
+}
+
+export function scanEmailRangeMatches(
+  input: EmailScanInput,
+  sink: EmailRangeMatchSink,
+  options: EmailFilterOptions = {},
+): boolean {
+  return scanEmailRangeMatchesWithOptions(
+    input,
+    createScannerOptions(options),
+    sink,
+  );
+}
+
+function checkEmailRangesWithOptions(
+  input: EmailScanInput,
+  scannerOptions: ScannerOptions,
+): boolean {
+  if (!hasEmailCandidateInput(input, scannerOptions)) return false;
+
+  const meta = createEmailTextMeta(input.text);
+  for (let i = 0; i < meta.normalized.length; i++) {
+    if (meta.normalized[i] !== TOKEN_VALUE.atSymbol) continue;
+    if (collectDirectEmailRange(meta, i, scannerOptions)) return true;
+  }
+
+  return (
+    scannerOptions.matchObfuscated &&
+    collectObfuscatedEmailRanges(meta, scannerOptions).length > 0
+  );
+}
+
+function scanEmailRangeMatchesWithOptions(
+  input: EmailScanInput,
+  scannerOptions: ScannerOptions,
+  sink: EmailRangeMatchSink,
+): boolean {
+  if (!hasEmailCandidateInput(input, scannerOptions)) return true;
+
+  const meta = createEmailTextMeta(input.text);
+  const emitted: TextCodePointRange[] = [];
+  const emit = (range: TextCodePointRange): boolean => {
+    if (
+      emitted.some(
+        (existing) => existing[0] === range[0] && existing[1] === range[1],
+      )
+    ) {
+      return true;
+    }
+
+    emitted.push(range);
+    return sink({ range }) !== false;
+  };
+
+  for (let i = 0; i < meta.normalized.length; i++) {
+    if (meta.normalized[i] !== TOKEN_VALUE.atSymbol) continue;
+    const range = collectDirectEmailRange(meta, i, scannerOptions);
+    if (range) {
+      if (!emit(range)) return false;
+      i = range[1] - 1;
+    }
+  }
+
+  if (scannerOptions.matchObfuscated) {
+    for (const range of collectObfuscatedEmailRanges(meta, scannerOptions)) {
+      if (!emit(range)) return false;
+    }
+  }
+
+  return true;
+}
+
+function hasEmailCandidateInput(
+  input: EmailScanInput,
+  scannerOptions: ScannerOptions,
+): boolean {
+  if (!input.text) return false;
+
+  const hints = input.hints;
+  if (
+    hints !== undefined &&
+    hints.hasAtSign === false &&
+    hints.hasDot === false &&
+    hints.hasNonAscii === false &&
+    !hasObfuscatedEmailWordCandidate(input.text)
+  ) {
+    return false;
+  }
+
+  return hasEmailCandidate(input.text, scannerOptions);
+}
+
 function hasEmailCandidate(
   value: string,
   scannerOptions: ScannerOptions,
@@ -107,6 +221,10 @@ function hasEmailCandidate(
     normalized.includes(TOKEN_VALUE.dotSymbol) ||
     hasWordCandidate(normalized, TOKEN_VALUE.dotWord)
   );
+}
+
+function hasObfuscatedEmailWordCandidate(value: string): boolean {
+  return /[aA][tT]|[dD][oO0][tT]/u.test(value);
 }
 
 function hasWordCandidate(value: string, word: string): boolean {

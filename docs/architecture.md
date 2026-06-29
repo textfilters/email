@@ -10,7 +10,11 @@ The package provides composable email censoring for direct addresses and common 
 
 The default `filter` export is a shared instance with default domain rules. `emailFilter(options?)` is an alias for `createEmailFilter(options?)`.
 
-`createEmailScanner(options?)` exposes the same matching behavior as a range scanner. `scanEmailRanges(text, options?)` returns code point ranges directly for callers that want to compose masking through `@textfilters/core`.
+`createEmailScanner(options?)` exposes the same matching behavior as a range
+scanner. It supports `check(input)` for boolean checks and `scan(input, sink)`
+for allocation-aware range streaming with early stop support. `scanEmailRanges`
+returns code point ranges directly for callers that want to compose masking
+through `@textfilters/core`.
 
 `EmailFilterOptions` supports:
 
@@ -65,27 +69,36 @@ graph TD
 
 ## File Responsibilities
 
-| File or directory                       | Responsibility                                                                 | Out of scope                        |
-| --------------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------- |
-| `src/index.ts`                          | Public entrypoint exports.                                                     | Scanner details.                    |
-| `src/types.ts`                          | Public constants, options, filter types, and scanner contract types.           | Internal token and metadata shapes. |
-| `src/normalization.ts`                  | Code point metadata, NFKC lowercase folding, and character predicates.         | Email matching policy.              |
-| `src/scanner.ts`                        | Scanner factory, cheap prefilter, option normalization, and final range merge. | Tokenization and rule internals.    |
-| `src/scanner/matching/direct.ts`        | Direct literal candidate discovery around `@`.                                 | Exclusions and boundary policy.     |
-| `src/scanner/matching/obfuscated.ts`    | Optional obfuscated candidate discovery through the token stream.              | Public API construction or masking. |
-| `src/scanner/matching/candidate.ts`     | Shared candidate validation, exclusions, and surrounding-boundary checks.      | Candidate discovery.                |
-| `src/scanner/context/bare-at-policy.ts` | Bare `at` phrase policy for prose, labels, and accepted address lists.         | Direct `user@example.com` matching. |
-| `src/scanner/context`                   | Introducer, label, phrase, and address-list helpers for bare `at` policy.      | Direct `user@example.com` matching. |
-| `src/scanner/rules`                     | Local/domain validation, scanner lexicon, and exclusions.                      | Metadata construction.              |
-| `src/scanner/core/types.ts`             | Shared internal token, punctuation, candidate, and scanner option types.       | Public types.                       |
-| `src/filter.ts`                         | Factory, shared instance, alias, and code point masking orchestration.         | Tokenization and domain validation. |
-| `tests/*.spec.ts`                       | Public behavior grouped by matching, contexts, prose guards, and integration.  | Exhaustive RFC email validation.    |
+| File or directory                       | Responsibility                                                                                                 | Out of scope                        |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `src/index.ts`                          | Public entrypoint exports.                                                                                     | Scanner details.                    |
+| `src/types.ts`                          | Public constants, options, filter types, and scanner contract types.                                           | Internal token and metadata shapes. |
+| `src/normalization.ts`                  | Code point metadata, NFKC lowercase folding, and character predicates.                                         | Email matching policy.              |
+| `src/scanner.ts`                        | Scanner factory, cheap prefilter, boolean checks, sink streaming, option normalization, and final range merge. | Tokenization and rule internals.    |
+| `src/scanner/matching/direct.ts`        | Direct literal candidate discovery around `@`.                                                                 | Exclusions and boundary policy.     |
+| `src/scanner/matching/obfuscated.ts`    | Optional obfuscated candidate discovery through the token stream.                                              | Public API construction or masking. |
+| `src/scanner/matching/candidate.ts`     | Shared candidate validation, exclusions, and surrounding-boundary checks.                                      | Candidate discovery.                |
+| `src/scanner/context/bare-at-policy.ts` | Bare `at` phrase policy for prose, labels, and accepted address lists.                                         | Direct `user@example.com` matching. |
+| `src/scanner/context`                   | Introducer, label, phrase, and address-list helpers for bare `at` policy.                                      | Direct `user@example.com` matching. |
+| `src/scanner/rules`                     | Local/domain validation, scanner lexicon, and exclusions.                                                      | Metadata construction.              |
+| `src/scanner/core/types.ts`             | Shared internal token, punctuation, candidate, and scanner option types.                                       | Public types.                       |
+| `src/filter.ts`                         | Factory, shared instance, alias, and code point masking orchestration.                                         | Tokenization and domain validation. |
+| `tests/*.spec.ts`                       | Public behavior grouped by matching, contexts, prose guards, and integration.                                  | Exhaustive RFC email validation.    |
 
 ## Scanner Flow
 
 Direct email scanning searches for normalized `@` characters, expands a local part to the left, expands a domain to the right, and emits an internal direct candidate. This path does not tokenize text and remains the small path for literal `user@example.com` matching.
 
-Before metadata creation, the scanner checks for cheap direct or obfuscated email candidate signals. Clearly clean text returns no ranges without tokenization; candidate text still runs through the same direct, obfuscated, exclusion, and false-positive guards as before.
+Before metadata creation, the scanner checks for cheap direct or obfuscated
+email candidate signals. Shared-style hints such as `hasAtSign`, `hasDot`,
+`hasNonAscii`, and text length can reject clearly clean input before metadata
+allocation. Candidate text still runs through the same direct, obfuscated,
+exclusion, and false-positive guards as before.
+
+Boolean `check()` scans direct `@` windows first and stops after the first valid
+candidate. Sink-based `scan(input, sink)` emits ranges as they are found and
+stops when the sink returns `false`; the legacy `scan(input)` result shape is
+preserved.
 
 Obfuscated scanning is isolated under `src/scanner/matching/obfuscated.ts` and only runs when `matchObfuscated` is not `false`. It tokenizes words and separator tokens while ignoring whitespace around bracketed separators. It accepts `at`, `dot`, `@`, and `.` separator forms when they appear between a plausible local part and a valid dotted domain, then emits an internal obfuscated candidate.
 
