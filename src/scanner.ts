@@ -154,6 +154,7 @@ function scanEmailRangeMatchesWithOptions(
   if (!hasEmailCandidateInput(input, scannerOptions)) return true;
 
   const meta = createEmailTextMeta(input.text);
+  const ranges: TextCodePointRange[] = [];
   const emitted: TextCodePointRange[] = [];
   const emit = (range: TextCodePointRange): boolean => {
     if (
@@ -172,15 +173,19 @@ function scanEmailRangeMatchesWithOptions(
     if (meta.normalized[i] !== TOKEN_VALUE.atSymbol) continue;
     const range = collectDirectEmailRange(meta, i, scannerOptions);
     if (range) {
-      if (!emit(range)) return false;
+      ranges.push(range);
       i = range[1] - 1;
     }
   }
 
   if (scannerOptions.matchObfuscated) {
-    for (const range of collectObfuscatedEmailRanges(meta, scannerOptions)) {
-      if (!emit(range)) return false;
-    }
+    ranges.push(...collectObfuscatedEmailRanges(meta, scannerOptions));
+  }
+
+  ranges.sort((left, right) => left[0] - right[0] || left[1] - right[1]);
+
+  for (const range of ranges) {
+    if (!emit(range)) return false;
   }
 
   return true;

@@ -74,6 +74,23 @@ describe("@textfilters/email scanner", () => {
     expect(seen).toEqual([[8, 25]]);
   });
 
+  it("streams mixed direct and obfuscated ranges in source order", () => {
+    const scanner = createEmailScanner();
+    const text = "user at example dot com then admin@example.org";
+    const seen: Array<readonly [number, number]> = [];
+
+    const completed = scanner.scan(
+      { text, codePoints: Array.from(text) },
+      (match) => {
+        seen.push(match.range);
+        return false;
+      },
+    );
+
+    expect(completed).toBe(false);
+    expect(seen).toEqual([[0, 23]]);
+  });
+
   it("uses shared-style hints to skip clearly clean text", () => {
     expect(
       checkEmailRanges({
