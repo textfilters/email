@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.7](https://github.com/textfilters/email/compare/v0.2.6...v0.2.7) (2026-06-30)
+
+
+### Performance Improvements
+
+* align email scanner with shared hints ([7528b2e](https://github.com/textfilters/email/commit/7528b2e0f31fc7e23ee374380c90437e42f3bea5))
+* introduce email scanner prefilter ([1631e5e](https://github.com/textfilters/email/commit/1631e5e2715ef6779106a1015d2aad9650ad755a))
+
 ## [0.2.6](https://github.com/textfilters/email/compare/v0.2.5...v0.2.6) (2026-06-25)
 
 
