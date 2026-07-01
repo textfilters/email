@@ -7,6 +7,7 @@ export {
   type EmailRangeScanResult,
   type EmailFilter,
   type EmailFilterOptions,
+  type EmailScanHints,
   type EmailScanInput,
 } from "./types.js";
 export {
