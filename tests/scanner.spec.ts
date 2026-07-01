@@ -2,13 +2,38 @@ import { describe, expect, it } from "vitest";
 
 import {
   checkEmailRanges,
+  createEmailFilter,
   createEmailScanner,
   scanEmailRangeMatches,
   scanEmailRanges,
   EMAIL_FILTER_NAME,
+  type EmailRangeScanner,
+  type EmailRangeScanResult,
+  type EmailScanHints,
 } from "../src/index.js";
 
+const mask = (value: string, maskChar = "*"): string =>
+  maskChar.repeat(Array.from(value).length);
+
 describe("@textfilters/email scanner", () => {
+  it("keeps scanner contracts compatible with shared range shapes", () => {
+    const scanner: EmailRangeScanner = createEmailScanner();
+    const hints: EmailScanHints = {
+      textLength: "contact user@example.com now".length,
+      hasNonAscii: false,
+      hasAtSign: true,
+      hasDot: true,
+    };
+    const text = "contact user@example.com now";
+    const result: EmailRangeScanResult = scanner.scan({
+      text,
+      codePoints: Array.from(text),
+      hints,
+    });
+
+    expect(result).toEqual({ ranges: [[8, 24]] });
+  });
+
   it("exposes scanner ranges compatible with code point masking", () => {
     const scanner = createEmailScanner();
     expect(
@@ -20,6 +45,20 @@ describe("@textfilters/email scanner", () => {
       ranges: [[8, 24]],
     });
     expect(scanner.name).toBe(EMAIL_FILTER_NAME);
+  });
+
+  it("keeps the public censor wrapper aligned with scanner ranges", () => {
+    const text = "contact user@example.com now";
+    const scanner = createEmailScanner();
+    const ranges = scanner.scan({
+      text,
+      codePoints: Array.from(text),
+    }).ranges;
+
+    expect(ranges).toEqual([[8, 24]]);
+    expect(createEmailFilter({ maskChar: "#" }).censor(text)).toBe(
+      `contact ${mask("user@example.com", "#")} now`,
+    );
   });
 
   it("keeps direct and obfuscated coverage through the scanner path", () => {

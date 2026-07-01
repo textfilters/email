@@ -17,24 +17,26 @@ export interface EmailFilter {
   censor(text: unknown): string;
 }
 
+export interface EmailScanHints {
+  readonly textLength?: number;
+  readonly hasNonAscii?: boolean;
+  readonly hasAtSign?: boolean;
+  readonly hasDot?: boolean;
+}
+
 export interface EmailScanInput {
   readonly text: string;
   readonly codePoints: readonly string[];
-  readonly hints?: {
-    readonly textLength?: number;
-    readonly hasNonAscii?: boolean;
-    readonly hasAtSign?: boolean;
-    readonly hasDot?: boolean;
-  };
+  readonly hints?: EmailScanHints;
 }
 
-export interface EmailRangeScanResult {
+export type EmailRangeScanResult = {
   readonly ranges: readonly TextCodePointRange[];
-}
+};
 
-export interface EmailRangeMatch {
+export type EmailRangeMatch = {
   readonly range: TextCodePointRange;
-}
+};
 
 export type EmailRangeMatchSink = (match: EmailRangeMatch) => boolean | void;
 
