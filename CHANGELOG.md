@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/textfilters/email/compare/v0.2.7...v0.3.0) (2026-07-01)
+
+
+### Features
+
+* align email scanner contract ([a87c592](https://github.com/textfilters/email/commit/a87c592fb5a97ef8241fcabda583a06dcf63c74a))
+
 ## [0.2.7](https://github.com/textfilters/email/compare/v0.2.6...v0.2.7) (2026-06-30)
 
 
