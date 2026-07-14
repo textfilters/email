@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/textfilters/email/compare/v0.3.0...v0.3.1) (2026-07-14)
+
+
+### Bug Fixes
+
+* updated core dependency to 0.4.0 ([ae8ec27](https://github.com/textfilters/email/commit/ae8ec2747258261de5dfa3a6094f60c6e447fb8b))
+
 ## [0.3.0](https://github.com/textfilters/email/compare/v0.2.7...v0.3.0) (2026-07-01)
 
 
